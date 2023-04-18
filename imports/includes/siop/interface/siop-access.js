@@ -1,7 +1,5 @@
 'use strict';
 
-import { resolve } from "url";
-
 class SiopServerAccess {
 	constructor(session) {
 		this.session = session;

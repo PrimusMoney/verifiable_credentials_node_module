@@ -197,5 +197,4 @@ class RemotePairCalls {
 }
 
 
-// Note: webpack does not handle well import on module.exports
-export default RemotePairCalls;
+module.exports = RemotePairCalls;

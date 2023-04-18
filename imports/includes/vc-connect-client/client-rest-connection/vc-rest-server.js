@@ -188,5 +188,4 @@ var VcRestServer = class {
 	}
 }
 
-// Note: webpack does not handle well import on module.exports
-export default VcRestServer;
+module.exports = VcRestServer;

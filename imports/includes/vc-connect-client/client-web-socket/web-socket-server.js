@@ -84,7 +84,7 @@ var WebSocketServer = class {
 		// then create client web socket
 		var server_url = this.wss_server_url + (this.wss_server_api_path ? this.wss_server_api_path : '');
 
-		const ClientWebSocket = require('./client-web-socket.js').default;
+		const ClientWebSocket = require('./client-web-socket.js');
 
 		let client_websocket = await new Promise((resolve, reject) => {
 			let socket_connection = new WebSocket(server_url + '?sessionuuid=' + sessionuuid + '&cnxuuid=' + connectionuuid);
@@ -150,5 +150,4 @@ var WebSocketServer = class {
 }
 
 
-// Note: webpack does not handle well import on module.exports
-export default WebSocketServer;
+module.exports = WebSocketServer;

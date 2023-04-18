@@ -61,5 +61,4 @@ var ClientWebSocket = class {
 }
 
 
-// Note: webpack does not handle well import on module.exports
-export default ClientWebSocket;
+module.exports = ClientWebSocket;
