@@ -1,5 +1,6 @@
 'use strict';
 
+
 var Module = class {
 	
 	constructor() {
@@ -52,20 +53,19 @@ var Module = class {
 		// siop module script loader
 		var modulescriptloader;
 		
-		// look if sioploader already created (e.g. for loading in node.js)
+	 	// look if sioploader already created (e.g. for loading in node.js)
 		modulescriptloader = global.findScriptLoader('sioploader');
 
 		// if not, create on as child as parent script loader passed in argument
 		if (!modulescriptloader)
 		modulescriptloader = global.getScriptLoader('sioploader', parentscriptloader);
 		
-		var xtraroot = './includes';
+ 		var xtraroot = './siop';
+		var moduleroot = xtraroot + '/modules/siop';
 		
 		var interfaceroot = xtraroot + '/interface';
 
 		modulescriptloader.push_script( interfaceroot + '/siop-access.js');
-
-		var moduleroot = xtraroot + '/modules/siop';
 
 		//modulescriptloader.push_script( moduleroot + '/control/controllers.js');
 		

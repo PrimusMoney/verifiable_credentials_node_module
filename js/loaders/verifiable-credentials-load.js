@@ -1,4 +1,4 @@
-import '../../imports/includes/modules/crypto-did/module-load.js';
+import '../../imports/includes/module-load.js';
 
 console.log('verifiable-credentials-load.js loader');
 

@@ -47,24 +47,47 @@ var Module = class {
 		modulescriptloader = parentscriptloader.getChildLoader('cryptodidloader');
 
 		var xtraroot = './includes';
-		var moduleroot = xtraroot + '/modules/crypto-did';
+		var moduleroot = xtraroot;
 
+		// common
 		modulescriptloader.push_script( moduleroot + '/common/async-rest-connection.js');
 		
 		// cryptokey-block module
 		var cryptokeyblockloader = modulescriptloader.getChildLoader('cryptoblockkeyloader'); // create loader with correct root dir
-		cryptokeyblockloader.setScriptRootDir(modulescriptloader.getScriptRootDir() + './includes/modules/crypto-did');
+		cryptokeyblockloader.setScriptRootDir(modulescriptloader.getScriptRootDir() + './includes');
 		modulescriptloader.push_script( moduleroot + '/cryptokey-block/modules/cryptokey-block/module.js');
 
+		// did
 		modulescriptloader.push_script( moduleroot + '/did/cryptocard.js');
 		modulescriptloader.push_script( moduleroot + '/did/did.js');
 
+		// ebsi
+		modulescriptloader.push_script( moduleroot + '/ebsi/ebsi-server.js');
+
+		// jw
 		modulescriptloader.push_script( moduleroot + '/jw/jw-cryptokeys.js');
 		modulescriptloader.push_script( moduleroot + '/jw/jwt.js');
 
+		// siop module
+		var sioploader = modulescriptloader.getChildLoader('sioploader'); // create loader with correct root dir
+		sioploader.setScriptRootDir(modulescriptloader.getScriptRootDir() + './includes');
+		modulescriptloader.push_script( moduleroot + '/siop/modules/siop/module.js');
+
+		// utils
 		modulescriptloader.push_script( moduleroot + '/utils/utils.js');
 
+		// vcconnect (should be imported as a @p2pmoney/vcconnect node module)
+/* 		modulescriptloader.push_script( moduleroot + '/vc-connect-client/client-rest-connection/vc-rest-server.js');
+
+		modulescriptloader.push_script( moduleroot + '/vc-connect-client/client-web-socket/client-web-socket.js');
+		modulescriptloader.push_script( moduleroot + '/vc-connect-client/client-web-socket/web-socket-server.js');
+
+		modulescriptloader.push_script( moduleroot + '/vc-connect-client/pair-connection/remote-pair-calls.js'); */
+
 		// verifiable credentials server access
+		var verifiablecredentialsserverloader = modulescriptloader.getChildLoader('verifiablecredentialsserverloader'); // create loader with correct root dir
+		verifiablecredentialsserverloader.setScriptRootDir(modulescriptloader.getScriptRootDir() + './includes');
+
 		modulescriptloader.push_script( moduleroot + '/vc-server/interface/verifiablecredentials-access.js');
 		modulescriptloader.push_script( moduleroot + '/vc-server/interface/verifiablecredentials-socket.js');
 		

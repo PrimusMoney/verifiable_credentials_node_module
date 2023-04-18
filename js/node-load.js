@@ -102,7 +102,7 @@ class NodeLoad {
 			ScriptLoader.reclaimScriptLoaderName('cryptodidloader'); // in case another node module used this name
 			verifiablecredentialsscriptloader.getChildLoader('cryptodidloader'); // create loader with correct root dir
 
-			verifiablecredentialsscriptloader.push_script('./includes/modules/crypto-did/module.js', function () {
+			verifiablecredentialsscriptloader.push_script('./includes/module.js', function () {
 				console.log('crypto-did module loaded');
 			});
 

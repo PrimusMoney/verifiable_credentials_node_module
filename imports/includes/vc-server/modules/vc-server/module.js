@@ -36,20 +36,20 @@ var Module = class {
 		// verifiablecredentials-server module script loader
 		var modulescriptloader;
 		
-		// look if oauth2loader already created (e.g. for loading in node.js)
+		// look if verifiablecredentialsserverloader already created (e.g. for loading in node.js)
 		modulescriptloader = global.findScriptLoader('verifiablecredentialsserverloader');
 
 		// if not, create on as child as parent script loader passed in argument
 		if (!modulescriptloader)
 		modulescriptloader = global.getScriptLoader('verifiablecredentialsserverloader', parentscriptloader);
 		
-		var xtraroot = './js/src/xtra';
+		var xtraroot = './vc-server';
+		var moduleroot = xtraroot + '/modules/vc-server';
 		
 		var interfaceroot = xtraroot + '/interface';
 
 		modulescriptloader.push_script( interfaceroot + '/verifiablecredentials-access.js');
-
-		var moduleroot = xtraroot + '/modules/vc-server';
+		modulescriptloader.push_script( interfaceroot + '/verifiablecredentials-socket.js');
 
 		//modulescriptloader.push_script( moduleroot + '/control/controllers.js');
 		
