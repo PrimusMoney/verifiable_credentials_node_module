@@ -1,0 +1,21 @@
+{
+  "name": "@primusmoney/verifiable_credentials",
+  "version": "0.30.10",
+  "author": "PrimusMoney",
+  "homepage": "http://www.primusmoney.com/",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/primusmoney/verifiable_credentials_node_module"
+  },
+  "scripts": {
+    "test:node": "mocha ./tests/tests.js"
+  },
+  "dependencies": {
+    "@p2pmoney-org/ethereum_core": "^0.30.10"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^6.2.1"
+  }
+}
