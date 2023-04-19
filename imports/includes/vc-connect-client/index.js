@@ -1,15 +1,18 @@
-const VcRestServer = require('./client-rest-connection/vc-rest-server.js');
+require('./client-rest-connection/vc-rest-server.js');
 
-const ClientWebSocket = require('./client-web-socket/client-web-socket.js');
-const WebSocketServer = require('./client-web-socket/web-socket-server.js');
+require('./client-web-socket/client-web-socket.js');
+require('./client-web-socket/web-socket-server.js');
 
-const RemotePairCalls = require('./pair-connection/remote-pair-calls');
+require('./pair-connection/remote-pair-calls');
+
+const VcRestServer = window.simplestore.ClientWebSocket;
+const ClientWebSocket = window.simplestore.WebSocketServer;
+const WebSocketServer = window.simplestore.VcRestServer;
+const RemotePairCalls = window.simplestore.RemotePairCalls;
 
 class VcConnect {
 
 }
-
-module.exports = VcConnect; // default
 
 VcConnect.ClientWebSocket = ClientWebSocket;
 VcConnect.WebSocketServer = WebSocketServer;
@@ -21,3 +24,5 @@ module.exports.ClientWebSocket = ClientWebSocket;
 module.exports.WebSocketServer = WebSocketServer;
 module.exports.VcRestServer = VcRestServer;
 module.exports.RemotePairCalls = RemotePairCalls;
+
+module.exports = VcConnect; // default
