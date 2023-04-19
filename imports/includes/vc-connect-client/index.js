@@ -5,11 +5,20 @@ require('./client-web-socket/web-socket-server.js');
 
 require('./pair-connection/remote-pair-calls');
 
-const VcRestServer = window.simplestore.ClientWebSocket;
-const ClientWebSocket = window.simplestore.WebSocketServer;
-const WebSocketServer = window.simplestore.VcRestServer;
-const RemotePairCalls = window.simplestore.RemotePairCalls;
+if (typeof window !== 'undefined') {
+	var _globalscope = window;
+}
+else if (typeof global !== 'undefined') {
+	var _globalscope = window;
+}
 
+const ClientWebSocket = _globalscope.simplestore.ClientWebSocket;
+const WebSocketServer = _globalscope.simplestore.WebSocketServer;
+const VcRestServer = _globalscope.simplestore.VcRestServer;
+const RemotePairCalls = _globalscope.simplestore.RemotePairCalls;
+
+
+// create decorated VcConnect class
 class VcConnect {
 
 }
@@ -19,6 +28,8 @@ VcConnect.WebSocketServer = WebSocketServer;
 VcConnect.VcRestServer = VcRestServer;
 VcConnect.RemotePairCalls = RemotePairCalls;
 
+
+// CommonJS exports
 module.exports.VcConnect = VcConnect;
 module.exports.ClientWebSocket = ClientWebSocket;
 module.exports.WebSocketServer = WebSocketServer;
