@@ -76,13 +76,13 @@ var Module = class {
 		// utils
 		modulescriptloader.push_script( moduleroot + '/utils/utils.js');
 
-		// vcconnect (should be imported as a @p2pmoney/vcconnect node module)
-/* 		modulescriptloader.push_script( moduleroot + '/vc-connect-client/client-rest-connection/vc-rest-server.js');
+		// vcconnect (should not import @p2pmoney-org/vcconnect in this case)
+ 		modulescriptloader.push_script( moduleroot + '/vc-connect-client/client-rest-connection/vc-rest-server.js');
 
 		modulescriptloader.push_script( moduleroot + '/vc-connect-client/client-web-socket/client-web-socket.js');
 		modulescriptloader.push_script( moduleroot + '/vc-connect-client/client-web-socket/web-socket-server.js');
 
-		modulescriptloader.push_script( moduleroot + '/vc-connect-client/pair-connection/remote-pair-calls.js'); */
+		modulescriptloader.push_script( moduleroot + '/vc-connect-client/pair-connection/remote-pair-calls.js');
 
 		// verifiable credentials server access
 		var verifiablecredentialsserverloader = modulescriptloader.getChildLoader('verifiablecredentialsserverloader'); // create loader with correct root dir

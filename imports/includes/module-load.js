@@ -33,6 +33,14 @@ import './siop/modules/siop/module.js';
 
 import './siop/modules/siop/model/siop.js';
 
+// vc-connect-client
+import './vc-connect-client/client-rest-connection/vc-rest-server.js';
+
+import './vc-connect-client/client-web-socket/client-web-socket.js';
+import './vc-connect-client/client-web-socket/web-socket-server.js';
+
+import './vc-connect-client/pair-connection/remote-pair-calls.js';
+
 // verifiable credentials server access
 import './vc-server/interface/verifiablecredentials-access.js';
 import './vc-server/interface/verifiablecredentials-socket.js';

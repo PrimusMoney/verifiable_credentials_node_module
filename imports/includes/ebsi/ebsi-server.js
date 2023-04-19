@@ -6,6 +6,11 @@ class EBSIServer {
 			case 'conformance':
 				this.rest_url = 'https://api-conformance.ebsi.eu'
 				break;
+
+			case 'pilot':
+				this.rest_url = 'https://api-pilot.ebsi.eu'
+				break;
+	
 			case 'production':
 				this.rest_url = 'https://api.ebsi.eu'
 				break;

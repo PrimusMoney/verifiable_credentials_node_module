@@ -61,4 +61,17 @@ var ClientWebSocket = class {
 }
 
 
-module.exports = ClientWebSocket;
+if (typeof window !== 'undefined') {
+	// we are in the browser or in react native
+	if  ((typeof window.simplestore === 'undefined') || (window.simplestore == null)) window.simplestore = {};
+	
+	window.simplestore.ClientWebSocket = ClientWebSocket;
+}
+else if (typeof global !== 'undefined') {
+	// we are in nodejs
+	if  ((typeof global.simplestore === 'undefined') || (global.simplestore == null)) global.simplestore = {};
+
+	global.simplestore.ClientWebSocket = ClientWebSocket;
+}
+
+//module.exports = ClientWebSocket;

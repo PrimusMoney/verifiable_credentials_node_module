@@ -188,4 +188,17 @@ var VcRestServer = class {
 	}
 }
 
-module.exports = VcRestServer;
+if (typeof window !== 'undefined') {
+	// we are in the browser or in react native
+	if  ((typeof window.simplestore === 'undefined') || (window.simplestore == null)) window.simplestore = {};
+	
+	window.simplestore.VcRestServer = VcRestServer;
+}
+else if (typeof global !== 'undefined') {
+	// we are in nodejs
+	if  ((typeof global.simplestore === 'undefined') || (global.simplestore == null)) global.simplestore = {};
+
+	global.simplestore.VcRestServer = VcRestServer;
+}
+
+//module.exports = VcRestServer;

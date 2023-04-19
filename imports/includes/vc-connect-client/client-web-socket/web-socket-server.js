@@ -70,6 +70,19 @@ var WebSocketServer = class {
 		}
 	}
 
+	_getClientWebSocketClass() {
+		require('./client-web-socket.js');
+
+		if (typeof window !== 'undefined') {
+			// we are in the browser or in react native
+			return window.simplestore.ClientWebSocket;
+		}
+		else if (typeof global !== 'undefined') {
+			// we are in nodejs
+			return global.simplestore.ClientWebSocket;
+		}
+	}
+
 	async createClientWebSocket(sessionuuid, connectionuuid, onopen_callback, onmessage_callback) {
 		if (!sessionuuid)
 			return Promise.reject('missing server session uuid');
@@ -84,7 +97,7 @@ var WebSocketServer = class {
 		// then create client web socket
 		var server_url = this.wss_server_url + (this.wss_server_api_path ? this.wss_server_api_path : '');
 
-		const ClientWebSocket = require('./client-web-socket.js');
+		const ClientWebSocket = this._getClientWebSocketClass();
 
 		let client_websocket = await new Promise((resolve, reject) => {
 			let socket_connection = new WebSocket(server_url + '?sessionuuid=' + sessionuuid + '&cnxuuid=' + connectionuuid);
@@ -150,4 +163,17 @@ var WebSocketServer = class {
 }
 
 
-module.exports = WebSocketServer;
+if (typeof window !== 'undefined') {
+	// we are in the browser or in react native
+	if  ((typeof window.simplestore === 'undefined') || (window.simplestore == null)) window.simplestore = {};
+	
+	window.simplestore.WebSocketServer = WebSocketServer;
+}
+else if (typeof global !== 'undefined') {
+	// we are in nodejs
+	if  ((typeof global.simplestore === 'undefined') || (global.simplestore == null)) global.simplestore = {};
+
+	global.simplestore.WebSocketServer = WebSocketServer;
+}
+
+//module.exports = WebSocketServer;
