@@ -597,7 +597,7 @@ class Did {
 	}
 
 	async verifyVerifiablePresentationJWT(audience, idtoken, vptoken, options) {
-		var verifiedVp;
+		var verification = {result: false, validations: {}};
 
 		try {
 			//const EbsiVerifiablePresentation= require('@cef-ebsi/verifiable-presentation');
@@ -612,22 +612,46 @@ class Did {
 
 			// checks
 			if (!vptoken)
-				return verifiedVp; // avoids "Uncaught ValidationError: Unable to decode JWT VC" in this._decodeJWT
+				return verification; // avoids "Uncaught ValidationError: Unable to decode JWT VC" in this._decodeJWT
 
-			const vp = await this._decodeJWT(vptoken);
+			const vp_obj = await this._decodeJWT(vptoken);
 
+			verification.validations.vpFormat = {status: true};
 
-			// verify
-			verifiedVp = await verifyPresentationJwt(vptoken, audience, options);
+			// check presentation
+			let _audience = (audience ? audience : (vp_obj && vp_obj.payload ? vp_obj.payload.aud : null));
+			let verifiedVp = await verifyPresentationJwt(vptoken, _audience, options);
+
+			if (verifiedVp) {
+				verification.result = true;
+
+				verification.validations.presentation = {status: true};
+
+				// check credential
+				//let vc_jwt = (vp_obj && vp_obj.payload && vp_obj.payload.verifiableCredential ? vp_obj.payload.verifiableCredential[0]: null);
+				verification.validations.credential = {status: true};
+		
+			}
+			else {
+				verification.result = false;
+
+				verification.validations.presentation = {status: false, error: 'VP jwt validation failed',	details: 'unkown'};
+				verification.validations.credential = {status: false};
+			}
+
 			
-			console.log(verifiedVp);
 		}
 		catch(e) {
+			console.log('exception in verifyVerifiablePresentationJWT: ' + e);
+
+			let error = (e ? (e.message ? e.message : e) : 'unknown');
+			verification.validations.presentation = {status: false, error};
+			verification.validations.credential = {status: false};
 
 		}
 
 
-		return verifiedVp;
+		return verification;
 	}
 
 	// static

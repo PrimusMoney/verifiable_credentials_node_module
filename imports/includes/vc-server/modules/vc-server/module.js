@@ -201,12 +201,18 @@ var Module = class {
 				openid_url += 'scope=openid';
 				openid_url += '&response_type=id_token';
 		
-				openid_url += '&client_id=' + Utils.encodebase64url(params.client_id);
-				openid_url += '&redirect_uri=' + Utils.encodebase64url(vc_config.rest_server_url + vc_config.rest_server_api_path);
-				openid_url += '&nonce=' + session.guid();
-				//openid_url += '&claims='
+				openid_url += '&client_id=' + encodeURIComponent(params.client_id);
+				
+				let redirect_uri = vc_config.rest_server_url + vc_config.rest_server_api_path + '/verifiablecredentials';
+				redirect_uri += (params.ebsi_conformance_v2 ? '/verifier-mock/authentication-responses' : '/verifier/present');
+				openid_url += '&redirect_uri=' + encodeURIComponent(redirect_uri);
 
-				//openid_url += '&conformance='
+				openid_url += '&nonce=' + session.guid();
+				
+				openid_url += '&conformance=' + sessionuuid;
+
+				/* openid_url += '&claims='  */
+
 			}
 			break
 
