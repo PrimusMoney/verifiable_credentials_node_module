@@ -166,7 +166,7 @@ class CryptoKeyBlockAccess {
 			// TODO: for authkey version > 0.30.16 use 
 			// let sessioncontext = await authkeymodule.getSessionContext(session);
 			// if (authkeymodule && (sessioncontext.remote !== false))
-			let authkeyserveraccess = authkeymodule.AuthKeyServerAccess(session);
+			let authkeyserveraccess = new authkeymodule.AuthKeyServerAccess(session);
 		
 			return new Promise((resolve, reject) => { 
 				authkeyserveraccess.key_user_add(sessionuser, cryptokey, (err, res) => {

@@ -92,14 +92,6 @@ class JwCryptoKeys {
 
  		switch (signingAlg) {
 			case "ES256K": {
-				// TODO: use let ec = new EC('secp256k1'); 
-/*  				const EbsiWalib = require('@cef-ebsi/wallet-lib');
-				let { EbsiWallet } = EbsiWalib;
-		
-				publicKeyJWK = new EbsiWallet(privateKeyHex).getPublicKey({
-				  format: "jwk",
-				}); */
-
  				let EC = require('elliptic').ec;
 
 				let ec = new EC('secp256k1'); 

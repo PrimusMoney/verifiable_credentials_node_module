@@ -53,9 +53,69 @@ class EBSIServer {
 		
 		return rest_connection.rest_put(resource, postdata, callback);
 	}
+
+	// @cef libs
+	async verifyVerifiablePresentationJWT(audience, idtoken, vptoken, options) {
+		var verification = {result: false, validations: {}};
+
+		try {
+			//const EbsiVerifiablePresentation= require('@cef-ebsi/verifiable-presentation');
+			const EbsiVerifiablePresentation = await import('@cef-ebsi/verifiable-presentation');
+			const { verifyPresentationJwt } = EbsiVerifiablePresentation;
+
+			if (!options)
+				options = {};
+
+			if (!options.ebsiAuthority)
+				options.ebsiAuthority = "api-conformance.ebsi.eu"; // for tests on conformance deployment
+
+			// checks
+			if (!vptoken)
+				return verification; // avoids "Uncaught ValidationError: Unable to decode JWT VC" in this._decodeJWT
+
+			const vp_obj = await this._decodeJWT(vptoken);
+
+			verification.validations.vpFormat = {status: true};
+
+			// check presentation
+			let _audience = (audience ? audience : (vp_obj && vp_obj.payload ? vp_obj.payload.aud : null));
+
+
+			let verifiedVp = await verifyPresentationJwt(vptoken, _audience, options);
+
+			if (verifiedVp) {
+				verification.result = true;
+
+				verification.validations.presentation = {status: true};
+
+				// check credential
+				//let vc_jwt = (vp_obj && vp_obj.payload && vp_obj.payload.verifiableCredential ? vp_obj.payload.verifiableCredential[0]: null);
+				verification.validations.credential = {status: true};
+		
+			}
+			else {
+				verification.result = false;
+
+				verification.validations.presentation = {status: false, error: 'VP jwt validation failed',	details: 'unkown'};
+				verification.validations.credential = {status: false};
+			}
+
+			
+		}
+		catch(e) {
+			console.log('exception in verifyVerifiablePresentationJWT: ' + e);
+
+			let error = (e ? (e.message ? e.message : e) : 'unknown');
+			verification.validations.presentation = {status: false, error};
+			verification.validations.credential = {status: false};
+
+		}
+
+		return verification;
+	}
 	
 	
-	// api
+	// rest api
 	async schema_list() {
 		var resource = "/trusted-schemas-registry/v2/schemas";
 

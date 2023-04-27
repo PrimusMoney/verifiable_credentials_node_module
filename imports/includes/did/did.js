@@ -620,17 +620,22 @@ class Did {
 
 			// check presentation
 			let _audience = (audience ? audience : (vp_obj && vp_obj.payload ? vp_obj.payload.aud : null));
+
+
+			// check credential
+			const vc_token = vp_obj.payload.verifiableCredential;
+
+			const vc_obj = await this._decodeJWT(vc_token);
+
 			let verifiedVp = await verifyPresentationJwt(vptoken, _audience, options);
 
-			if (verifiedVp) {
+			if (vc_obj) {
 				verification.result = true;
 
 				verification.validations.presentation = {status: true};
 
-				// check credential
-				//let vc_jwt = (vp_obj && vp_obj.payload && vp_obj.payload.verifiableCredential ? vp_obj.payload.verifiableCredential[0]: null);
 				verification.validations.credential = {status: true};
-		
+	
 			}
 			else {
 				verification.result = false;
@@ -638,8 +643,6 @@ class Did {
 				verification.validations.presentation = {status: false, error: 'VP jwt validation failed',	details: 'unkown'};
 				verification.validations.credential = {status: false};
 			}
-
-			
 		}
 		catch(e) {
 			console.log('exception in verifyVerifiablePresentationJWT: ' + e);
@@ -647,7 +650,6 @@ class Did {
 			let error = (e ? (e.message ? e.message : e) : 'unknown');
 			verification.validations.presentation = {status: false, error};
 			verification.validations.credential = {status: false};
-
 		}
 
 

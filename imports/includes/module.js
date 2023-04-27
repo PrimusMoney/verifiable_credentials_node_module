@@ -210,6 +210,36 @@ var Module = class {
 		return false;
 	}
 
+	async runTestDid(session) {
+		var global = this.global;
+		var _apicontrollers = this._getClientAPI();
+
+		try {
+			let json = {};
+			json.private_key = await this.generatePrivateKey(session);
+
+			var cryptokeyblockmodule = global.getModuleObject('cryptokey-block');
+			var cryptokeyblockinterface = cryptokeyblockmodule.getCryptoKeyBlockInterface();
+	
+			var keySet = await cryptokeyblockinterface.importPrivateKey(session, json.private_key);
+	
+			const Did = global.getModuleClass('crypto-did', 'Did');
+			const did_obj = Did.getObject(session, keyuuid);
+	
+			json.alg = 'ES256';
+			json.method = 'ebsi';
+			json.type = 'natural';
+	
+			json.did = await did_obj.getDid(json.alg, method, type)
+	
+		}
+		catch(e) {
+			console.log('exception in runTestDid: ' + e);
+		}
+
+		return false;
+	}
+
 	async runTestJWT(session, keyuuid) {
 		var global = this.global;
 		var _apicontrollers = this._getClientAPI();
