@@ -55,6 +55,15 @@ class EBSIServer {
 	}
 
 	// @cef libs
+	async _decodeJWT(jwt) {
+		var session = this.session;
+		var global = session.getGlobalObject();
+
+		const JWT = global.getModuleClass('crypto-did', 'JWT');
+		return JWT.decodeJWT(jwt);
+	}
+	
+
 	async verifyVerifiablePresentationJWT(audience, idtoken, vptoken, options) {
 		var verification = {result: false, validations: {}};
 

@@ -218,7 +218,7 @@ var Module = class {
 			let json = {};
 			json.private_key = await this.generatePrivateKey(session);
 
-			var cryptokeyblockmodule = global.getModuleObject('cryptokey-block');
+/* 			var cryptokeyblockmodule = global.getModuleObject('cryptokey-block');
 			var cryptokeyblockinterface = cryptokeyblockmodule.getCryptoKeyBlockInterface();
 	
 			var keySet = await cryptokeyblockinterface.importPrivateKey(session, json.private_key);
@@ -230,7 +230,7 @@ var Module = class {
 			json.method = 'ebsi';
 			json.type = 'natural';
 	
-			json.did = await did_obj.getDid(json.alg, method, type)
+			json.did = await did_obj.getDid(json.alg, method, type); */
 	
 		}
 		catch(e) {

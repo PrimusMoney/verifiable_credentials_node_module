@@ -224,6 +224,24 @@ var VerifiableCredentialsServerAccess = class {
 	}
 
 	// verifier
+	async verifier_datasink_add(client_id, client_key, name, endpoint, credential_type) {
+		// POST
+		var resource = "/verifier/datasink/add";
+
+		var postdata = {client_id, client_key, name, endpoint, credential_type};
+
+		var res = await this.rest_post(resource, postdata);
+
+		if (!res)
+			throw('rest error calling ' + resource );
+		else {
+			if (res['error'])
+				throw('rest error calling ' + resource + (res['error'] ? ': ' + res['error'] : ''));
+			else
+				return res['datasink'];
+		}
+	}
+
 	async verifier_verify(audience, idtoken, vptoken, options) {
 		// POST
 		var resource = "/verifier/verify";

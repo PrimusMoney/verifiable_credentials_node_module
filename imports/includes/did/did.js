@@ -600,9 +600,6 @@ class Did {
 		var verification = {result: false, validations: {}};
 
 		try {
-			//const EbsiVerifiablePresentation= require('@cef-ebsi/verifiable-presentation');
-			const EbsiVerifiablePresentation = await import('@cef-ebsi/verifiable-presentation');
-			const { verifyPresentationJwt } = EbsiVerifiablePresentation;
 
 			if (!options)
 				options = {};
@@ -626,8 +623,6 @@ class Did {
 			const vc_token = vp_obj.payload.verifiableCredential;
 
 			const vc_obj = await this._decodeJWT(vc_token);
-
-			let verifiedVp = await verifyPresentationJwt(vptoken, _audience, options);
 
 			if (vc_obj) {
 				verification.result = true;
