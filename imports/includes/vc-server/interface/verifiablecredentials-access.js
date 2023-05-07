@@ -205,11 +205,11 @@ var VerifiableCredentialsServerAccess = class {
 	}
 
 	// issuer
-	async issuer_datasource_add(client_id, client_key, name, endpoint, credential_type) {
+	async issuer_datasource_add(client_id, client_key, name, endpoint, credential_type, nonce) {
 		// POST
 		var resource = "/issuer/datasource/add";
 
-		var postdata = {client_id, client_key, name, endpoint, credential_type};
+		var postdata = {client_id, client_key, name, endpoint, credential_type, nonce};
 
 		var res = await this.rest_post(resource, postdata);
 
@@ -224,11 +224,11 @@ var VerifiableCredentialsServerAccess = class {
 	}
 
 	// verifier
-	async verifier_datasink_add(client_id, client_key, name, endpoint, credential_type) {
+	async verifier_datasink_add(client_id, client_key, name, endpoint, credential_type, nonce) {
 		// POST
 		var resource = "/verifier/datasink/add";
 
-		var postdata = {client_id, client_key, name, endpoint, credential_type};
+		var postdata = {client_id, client_key, name, endpoint, credential_type, nonce};
 
 		var res = await this.rest_post(resource, postdata);
 

@@ -190,7 +190,7 @@ var Module = class {
 				openid_url += 'issuer=' + encodeURIComponent(vc_config.rest_server_url + vc_config.rest_server_vc_api_path);
 				openid_url += '&credential_type=' + encodeURIComponent(params.credential_type);
 
-				openid_url += '&conformance=' + sessionuuid;
+				openid_url += '&conformance=' + (params.conformance ? params.conformance : sessionuuid);
 			}
 			break;
 
@@ -207,7 +207,7 @@ var Module = class {
 				redirect_uri += (params.ebsi_conformance_v2 ? '/verifier-mock/authentication-responses' : '/verifier/present');
 				openid_url += '&redirect_uri=' + encodeURIComponent(redirect_uri);
 
-				openid_url += '&nonce=' + session.guid();
+				openid_url += '&nonce=' + (params.nonce ? params.nonce : session.guid());
 				
 				openid_url += '&conformance=' + sessionuuid;
 
