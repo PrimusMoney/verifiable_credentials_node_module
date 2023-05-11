@@ -83,7 +83,61 @@ class JWT {
 
 		return jsontokens.decodeToken(jwt);
 	}
+
+	static async validateJWTSigning(session, jwt) {
+		let global = session.getGlobalObject();
+
+		let decodedJwt = await JWT.decodeJWT(jwt);
+
+		let header = decodedJwt.header;
+		let payload = decodedJwt.payload;
+		let signature = decodedJwt.signature;
+
+		decodedJwt.valid = false;
+
+		switch(header.alg) {
+			case 'ES256': {
+				const jose = require('jose');
+
+				const JwCryptoKeys = global.getModuleClass('crypto-did', 'JwCryptoKeys');
+				const cryptokeys = JwCryptoKeys.getObject(session);
+				let publicJwk = header.jwk;
+
+				let publicCryptoKey = await cryptokeys.importCryptoKeyFromJwk(publicJwk);
+
+    			let result = await jose.jwtVerify(jwt, publicCryptoKey).catch(err=> {});
+				
+				decodedJwt.valid = (result ? true : false);
+			}
+			break;
+			case 'ES256K': {
+				const jose = require('jose');
+
+				const JwCryptoKeys = global.getModuleClass('crypto-did', 'JwCryptoKeys');
+				const cryptokeys = JwCryptoKeys.getObject(session);
+				let publicJwk = header.jwk;
+
+ 				let javascript_env = global.getJavascriptEnvironment();
 		
+				if (javascript_env != 'browser') {
+					let publicCryptoKey = await jose.importJWK(publicJwk, 'ES256K');
+
+					let result = await jose.jwtVerify(jwt, publicCryptoKey).catch(err=> {});
+				
+					decodedJwt.valid = (result ? true : false);
+				}
+				else {
+					return Promise.reject('jose.importJWK does not support ES256K on the browser');
+				}
+			}
+			break;
+
+			default:
+				return Promise.reject(`Algorithm ${header.alg} not supported`);
+		}
+
+		return decodedJwt;
+	}
 
 	static getObject(session, header, body) {
 		return new JWT(session, header, body);

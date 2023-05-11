@@ -124,6 +124,18 @@ class SiopServerAccess {
 		return kid;
 	}
 
+	async _getKeyKid(keyuuid, alg) {
+		var session = this.session;
+		var global = session.getGlobalObject();
+
+		const Did = global.getModuleClass('crypto-did', 'Did');
+		const did = Did.getObject(session, keyuuid);
+		
+		var kid = await did.getKid(alg, 'key', 'natural');
+
+		return kid;
+	}
+
 	async _getEbsiKid(keyuuid, alg) {
 		var session = this.session;
 		var global = session.getGlobalObject();
@@ -136,7 +148,7 @@ class SiopServerAccess {
 		return kid;
 	}
 
-	async _createIdToken(nonce, challenge, keyuuid, alg) {
+	async _createIdToken(nonce, challenge, keyuuid, alg, did_method) {
 		var session = this.session;
 		var global = session.getGlobalObject();
 
@@ -156,8 +168,25 @@ class SiopServerAccess {
 		header.alg = alg;
 		header.jwk = {crv: jwkPubKey.crv, kty: jwkPubKey.kty, x: jwkPubKey.x, y: jwkPubKey.y};
 
-		//header.kid = await this._getEbsiKid(keyuuid, alg);
-		header.kid = await this._getEthrKid(keyuuid, alg);
+		switch(did_method) {
+			case 'ethr':
+				header.kid = await this._getEthrKid(keyuuid, alg);
+				break;
+
+			case 'key':
+				header.kid = await this._getKeyKid(keyuuid, alg);
+				break;
+
+			case 'ebsi':
+				header.kid = await this._getEbsiKid(keyuuid, alg);
+				break;
+
+			default:
+				header.kid = await this._getEthrKid(keyuuid, alg);
+				break;
+
+		}
+
 
 		// build body
 
@@ -217,10 +246,11 @@ class SiopServerAccess {
 		let nonce = (params && params.nonce ? params.nonce : null);
 		let challenge = (params && params.challenge ? params.challenge : null);
 		let alg = (params && params.alg ? params.alg : 'ES256');
+		let did_method = (params && params.did_method ? params.did_method : 'ethr');
 
 
 		try {
-			const id_token = await this._createIdToken(nonce ,challenge, keyuuid, alg);
+			const id_token = await this._createIdToken(nonce ,challenge, keyuuid, alg, did_method);
 
 			let resource = "/impersonate";
 

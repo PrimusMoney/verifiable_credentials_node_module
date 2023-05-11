@@ -55,6 +55,134 @@ class EBSIServer {
 	}
 
 	// @cef libs
+	_getUtilsClass() {
+		if (this.UtilsClass)
+		return this.UtilsClass;
+
+		let global = this.session.getGlobalObject();
+		
+		this.UtilsClass = global.getModuleClass('crypto-did', 'Utils');
+
+		return this.UtilsClass;
+	}
+
+	async createDid(keySet, did_method, type) {
+
+		const jose = require('jose');
+		const Utils = this._getUtilsClass();
+
+		const publicKeyJwkAgent = keySet.jwkKeyPair.publicKey;
+
+		switch(did_method) {
+			case 'ebsi': {
+				switch (type) {
+					case 'legal': {
+						const EbsiWalib = require('@cef-ebsi/wallet-lib');
+						let { EbsiWallet } = EbsiWalib;
+
+						// Create a random Legal Entity DID
+						const random_did = EbsiWallet.createDid("LEGAL_ENTITY");
+
+						// non random, derived from public key
+						const thumbprint = await jose.calculateJwkThumbprint(publicKeyJwkAgent, "sha256");
+
+						let subject_id = Utils.encodehex(jose.base64url.decode(thumbprint)).split('x')[1].slice(0, 32);
+						const did = `did:ebsi:${Utils.encodebase58btc('01' + subject_id, 'hex')}`; // '01' for legal person
+				
+						return did;
+					}
+
+					case 'natural': {
+						const thumbprint = await jose.calculateJwkThumbprint(publicKeyJwkAgent, "sha256");
+
+						let subject_id = Utils.encodehex(jose.base64url.decode(thumbprint));
+						const did = `did:ebsi:${Utils.encodebase58btc('02' + subject_id.split('x')[1], 'hex')}`; // '02' for natural person
+				
+						return did;
+					}
+
+					default:
+					return Promise.reject('type is not supported: ' + type);
+				}
+
+			}
+
+			case 'key': {
+				const {util} = require('@cef-ebsi/key-did-resolver');
+
+				const did = util.createDid(publicKeyJwkAgent);
+
+				return did;
+			}
+
+			default:
+				return Promise.reject('did method not supported: ' + did_method);
+		}
+	}
+
+	async getNaturalPersonAgent(keySet, alg) {
+		var session = this.session;
+		var global = session.getGlobalObject();
+		const Utils = global.getModuleClass('crypto-did', 'Utils');
+
+		const EbsiSiop = require('@cef-ebsi/siop-auth');
+		const EbsiWalib = require('@cef-ebsi/wallet-lib');
+		const jose = require('jose');
+
+
+		let { Agent } = EbsiSiop;
+		let { EbsiWallet } = EbsiWalib;
+		let { calculateJwkThumbprint, exportJWK, JWK } = jose;
+		
+		const publicKeyJwkAgent = keySet.jwkKeyPair.publicKey;
+
+		const thumbprint = await calculateJwkThumbprint(publicKeyJwkAgent, "sha256");
+
+		let didAgent;
+
+		if (keySet.did) {
+			didAgent = keySet.did;
+		}
+		else {
+			let subject_id = Utils.encodehex(jose.base64url.decode(thumbprint));
+			didAgent = `did:ebsi:${Utils.encodebase58btc('02' + subject_id.split('x')[1], 'hex')}`; // '02' for natural person
+		}
+
+		const kidAgent = `${didAgent}#${thumbprint}`;
+		let privateKey;
+
+		switch(alg) {
+			case 'ES256': {
+				privateKey = keySet.cryptoKeyPair.privateKey;
+			}
+			break;
+
+			case 'ES256K': {
+				let javascript_env = global.getJavascriptEnvironment();
+				let jwkPrivateKey = keySet.jwkKeyPair.privateKey;
+		
+				if (javascript_env != 'browser')
+				privateKey = await jose.importJWK(jwkPrivateKey);
+				else {
+					return Promise.reject('jose.importJWK does not support ES256K on the browser');
+				}
+			}
+			break;
+
+			default:
+				return Promise.reject('does not support alg: ' + alg);
+		}
+
+		const agent = new Agent({
+		  privateKey,
+		  alg,
+		  kid: kidAgent,
+		  siopV2: true,
+		});
+
+		return agent;
+	}
+
 	async _decodeJWT(jwt) {
 		var session = this.session;
 		var global = session.getGlobalObject();

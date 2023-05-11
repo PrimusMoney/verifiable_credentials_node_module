@@ -216,21 +216,25 @@ var Module = class {
 
 		try {
 			let json = {};
+
+			json.alg = 'ES256';
 			json.private_key = await this.generatePrivateKey(session);
 
-/* 			var cryptokeyblockmodule = global.getModuleObject('cryptokey-block');
-			var cryptokeyblockinterface = cryptokeyblockmodule.getCryptoKeyBlockInterface();
-	
-			var keySet = await cryptokeyblockinterface.importPrivateKey(session, json.private_key);
+ 			const JwCryptoKeys = global.getModuleClass('crypto-did', 'JwCryptoKeys');
+			const cryptokeys = JwCryptoKeys.getObject(session);	
+
+			var keySet = await cryptokeys._computeKeySet(session, json.private_key, json.alg);
 	
 			const Did = global.getModuleClass('crypto-did', 'Did');
-			const did_obj = Did.getObject(session, keyuuid);
+			const did_obj = Did.getObjectFromKeySet(session, keySet);
 	
-			json.alg = 'ES256';
-			json.method = 'ebsi';
-			json.type = 'natural';
-	
-			json.did = await did_obj.getDid(json.alg, method, type); */
+			json.ethr_did = await did_obj.getDid(json.alg, 'ethr', 'natural');
+			json.ebsi_did = await did_obj.getDid(json.alg, 'ebsi', 'natural');
+			json.key_did = await did_obj.getDid(json.alg, 'key', 'natural');
+
+			json.ebsi_legal_did = await did_obj.getDid(json.alg, 'ebsi', 'legal');
+
+			return true;
 	
 		}
 		catch(e) {
@@ -245,26 +249,37 @@ var Module = class {
 		var _apicontrollers = this._getClientAPI();
 
 		const JWT = global.getModuleClass('crypto-did', 'JWT');
+		const Did = global.getModuleClass('crypto-did', 'Did');
 
 		try {
-			// JWT
+			const k1did_obj = Did.getObject(session, keyuuid);
+			const r1did_obj = Did.getObject(session, keyuuid);
+
+			// create did and kid
+			let k1Agent = await k1did_obj.getNaturalPersonAgent('ES256K', 'ebsi').catch(err => {}); // problem CryptoKey with secp256k1 on browser
+			let r1Agent = await r1did_obj.getNaturalPersonAgent('ES256', 'ebsi');
+
+			// create JWT
 			let header = {hash: 'xdsmskd'};
 			let body = {id: 'test'};
 
 			const jwt = JWT.getObject(session, header, body);
 
-			//let k1token = await jwt.createJWT(keyuuid, 'ES256K');
+			let k1token = await jwt.createJWT(keyuuid, 'ES256K');
 			let r1token = await jwt.createJWT(keyuuid, 'ES256');
 
-			const Did = global.getModuleClass('crypto-did', 'Did');
-			const k1did = Did.getObject(session, keyuuid);
-			const r1did = Did.getObject(session, keyuuid);
+			// create DidJwt
 	
-			//let k1didtoken = await k1did.createDidJWT(header, body, 'ES256K');
-			let r1didtoken = await r1did.createDidJWT(header, body, 'ES256');
-			
-			let k1Agent = await k1did.getNaturalPersonAgent('ES256K').catch(err => {}); // problem CryptoKey with secp256k1
-			let r1Agent = await r1did.getNaturalPersonAgent('ES256');
+			let k1didtoken = await k1did_obj.createDidJWT(header, body, 'ES256K', 'ebsi');
+			let r1didtoken = await r1did_obj.createDidJWT(header, body, 'ES256', 'ebsi');
+
+			// validate jwt
+			let k1validation = await JWT.validateJWTSigning(session, k1token).catch(err => {}); // problem CryptoKey with secp256k1 on browser
+			let r1validation = await JWT.validateJWTSigning(session, r1token);
+
+
+			let k1didvalidation = await JWT.validateJWTSigning(session, k1didtoken).catch(err => {}); // problem CryptoKey with secp256k1 on browser
+			let r1didvalidation = await JWT.validateJWTSigning(session, r1didtoken);
 
 			return true;
 		}
@@ -552,12 +567,12 @@ var Module = class {
 		return did.fetchVerifiabledPresentationVerification(audience, idtoken, vptoken, options);
 	}
 
-	createVerifiablePresentationJWT(session, audience, vcJwt, keyuuid, alg) {
+	createVerifiablePresentationJWT(session, audience, vcJwt, keyuuid, alg, options) {
 		var global = this.global;
 		const Did = global.getModuleClass('crypto-did', 'Did');
 		const did = Did.getObject(session, keyuuid);
 
-		return did.createVerifiablePresentationJWT(audience, vcJwt, alg)
+		return did.createVerifiablePresentationJWT(audience, vcJwt, alg, options)
 	}
 
 

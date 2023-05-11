@@ -407,15 +407,7 @@ class JwCryptoKeys {
 		return jwkKeyPair;
 	}
 
-	async getKeySet(keyuuid, alg) {
-		var session = this.session;
-		var global = session.getGlobalObject();
-		var cryptokeyblockmodule = global.getModuleObject('cryptokey-block');
-		var cryptokeyblockinterface = cryptokeyblockmodule.getCryptoKeyBlockInterface();
-
-		const hexPrivateKey = await cryptokeyblockinterface.exportPrivateKey(session, keyuuid);
-
-		let jwkKeyPair;
+	async _computeKeySet(session, hexPrivateKey, alg) {
 		let cryptoKeyPair;
 
 		let keySet = {alg, hexPrivateKey};
@@ -452,6 +444,17 @@ class JwCryptoKeys {
 		}
 
 		return keySet;
+	}
+
+	async getKeySet(keyuuid, alg) {
+		var session = this.session;
+		var global = session.getGlobalObject();
+		var cryptokeyblockmodule = global.getModuleObject('cryptokey-block');
+		var cryptokeyblockinterface = cryptokeyblockmodule.getCryptoKeyBlockInterface();
+
+		const hexPrivateKey = await cryptokeyblockinterface.exportPrivateKey(session, keyuuid);
+
+		return this._computeKeySet(session, hexPrivateKey, alg);
 	}
 
 	// static

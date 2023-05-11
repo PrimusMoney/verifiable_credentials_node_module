@@ -32,7 +32,7 @@ class Did {
 		return cryptokeys;
 	}
 
-	async createDidJWT(header, payload, alg) {
+	async createDidJWT(header, payload, alg, did_method, type) {
 		let keySet = await this._getKeySet(alg);
 
 		//const didJWT = require('did-jwt'); // returns path to "/my-did-wallet/static/media/index.c63b8054ea38e87f580d.cjs"
@@ -72,7 +72,7 @@ class Did {
 		_header.alg = signingAlg;
 		_header.jwk = publicJwk;
 
-		let did = await this.getDid(alg);
+		let did = await this.getDid(alg, did_method, (type ? type : 'natural'));
 
 		let options = {
 			alg: _header.alg,
@@ -87,54 +87,76 @@ class Did {
 
 	}
 
-	async getDid(alg, method, type) {
+	async getDid(alg, did_method, type) {
+		var session = this.session;
+		var global = session.getGlobalObject();
+
 		let keySet = await this._getKeySet(alg);
 
-		const jose = require('jose');
-		const Utils = this._getUtilsClass();
-
-		const publicKeyJwkAgent = keySet.jwkKeyPair.publicKey;
-
-		switch(method) {
+		switch(did_method) {
 			case 'ethr': {
-				return Promise.reject('did:ethr not implemented yet!');
+				let cryptokeyblockmodule = global.getModuleObject('cryptokey-block');
+				let cryptokeyblockinterface = cryptokeyblockmodule.getCryptoKeyBlockInterface();
+				let keyuuid = this.keyuuid;
+
+				if (!keyuuid && keySet.hexPrivateKey) {
+					keyuuid = session.guid();
+
+					let cryptokey = session.createBlankCryptoKeyObject();
+
+					cryptokey.setKeyUUID(keyuuid);
+					cryptokey.setPrivateKey(keySet.hexPrivateKey);
+
+					session.addCryptoKeyObject(cryptokey);
+
+					let user = session.getSessionUserObject();
+			
+					if (user) user.addCryptoKeyObject(cryptokey);
+				}
+		
+				let aes_pub_keys = await cryptokeyblockinterface.getPublicKeys(session, {keyuuid, curve: 'secp256k1'});
+		
+				let _ethr_did = 'did:ethr:' + aes_pub_keys.address;
+		
+				return _ethr_did;
+			}
+
+			case 'ebsi': {
+				const EBSIServer = global.getModuleClass('crypto-did', 'EBSIServer');
+				let ebsi_server = new EBSIServer(session);
+		
+				let _ebsi_did = await ebsi_server.createDid(keySet, 'ebsi', type);		
+				return _ebsi_did;
+			}
+
+			case 'key': {
+				const EBSIServer = global.getModuleClass('crypto-did', 'EBSIServer');
+				let ebsi_server = new EBSIServer(session);
+		
+				let _key_did = await ebsi_server.createDid(keySet, 'key', type);		
+				return _key_did;
 			}
 
 			default:
-			case 'ebsi': {
-				if (method && method != 'ebsi')
-					return Promise.reject('method is not supported: ' + method);
-
-				if (type && type != 'natural')
-					return Promise.reject('type is not supported: ' + type);
-
-				const thumbprint = await jose.calculateJwkThumbprint(publicKeyJwkAgent, "sha256");
-
-				let subject_id = Utils.encodehex(jose.base64url.decode(thumbprint));
-				const did = `did:ebsi:${Utils.encodebase58btc('02' + subject_id.split('x')[1], 'hex')}`; // '02' for natural person
-		
-				return did;
-			}
+				return Promise.reject('did method not supported: ' + did_method);
 		}
-
 
 	}
 
-	async getKid(alg, method, type) {
+	async getKid(alg, did_method, type) {
 		let keySet = await this._getKeySet(alg);
 
 		const jose = require('jose');
 
-		const did = await this.getDid(alg, method, type);
+		const did = await this.getDid(alg, did_method, type);
 
-		switch(method) {
+		switch(did_method) {
 			case 'ethr': {
 				const kid = `${did}#owner1`;
 		
 				return kid;
 			}
 
-			default:
 			case 'ebsi': {
 				const publicKeyJwkAgent = keySet.jwkKeyPair.publicKey;
 
@@ -144,6 +166,15 @@ class Did {
 		
 				return kid;
 			}
+
+			case 'key': {
+				const kid = `${did}#owner1`;
+		
+				return kid;
+			}
+
+			default:
+				return Promise.reject('did method not supported: ' + did_method);
 		}
 	}
 
@@ -188,71 +219,41 @@ class Did {
 
 	async _getKeySet(alg) {
 		let keyuuid = this.keyuuid;
+
+		if (!keyuuid) {
+			if (this.keySet)
+			return this.keySet; // for temporary keys
+			else
+			return Promise.reject('missing key uuid');
+		}
+
 		const cryptokeys = this._getCryptoKeysObject();
 		return cryptokeys.getKeySet(keyuuid, alg);
 	}
 
-	async getNaturalPersonAgent(alg) {
+	async getNaturalPersonAgent(alg, did_method) {
 		var session = this.session;
 		var global = session.getGlobalObject();
-		const Utils = global.getModuleClass('crypto-did', 'Utils');
 
-		const EbsiSiop = require('@cef-ebsi/siop-auth');
-		const EbsiWalib = require('@cef-ebsi/wallet-lib');
-		const jose = require('jose');
-
-
-		let { Agent } = EbsiSiop;
-		let { EbsiWallet } = EbsiWalib;
-		let { calculateJwkThumbprint, exportJWK, JWK } = jose;
-		
 		let keySet = await this._getKeySet(alg);
+		let agent = {};
 
-		const publicKeyJwkAgent = keySet.jwkKeyPair.publicKey;
-
-		const thumbprint = await calculateJwkThumbprint(publicKeyJwkAgent, "sha256");
-
-		let didAgent;
-
-		if (keySet.did) {
-			didAgent = keySet.did;
-		}
-		else {
-			let subject_id = Utils.encodehex(jose.base64url.decode(thumbprint));
-			didAgent = `did:ebsi:${Utils.encodebase58btc('02' + subject_id.split('x')[1], 'hex')}`; // '02' for natural person
-		}
-
-		const kidAgent = `${didAgent}#${thumbprint}`;
-		let privateKey;
-
-		switch(alg) {
-			case 'ES256': {
-				privateKey = keySet.cryptoKeyPair.privateKey;
-			}
-			break;
-
-			case 'ES256K': {
-				let javascript_env = global.getJavascriptEnvironment();
-				let jwkPrivateKey = keySet.jwkKeyPair.privateKey;
+		switch (did_method) {
+			case 'ebsi': {
+				const EBSIServer = global.getModuleClass('crypto-did', 'EBSIServer');
+				let ebsi_server = new EBSIServer(session);
 		
-				if (javascript_env != 'browser')
-				privateKey = await jose.importJWK(jwkPrivateKey);
-				else {
-					return Promise.reject('jose.importJWK does not support ES256K on the browser');
-				}
+				let _ebsi_agent = await ebsi_server.getNaturalPersonAgent(keySet, alg);
+
+				agent.did = _ebsi_agent.did;
+				agent.kid = _ebsi_agent.kid;
 			}
 			break;
 
 			default:
-				return Promise.reject('does not support alg: ' + alg);
-		}
+				return Promise.reject('did method not supported: ' + did_method);
 
-		const agent = new Agent({
-		  privateKey,
-		  alg,
-		  kid: kidAgent,
-		  siopV2: true,
-		});
+		}
 
 		return agent;
 	}
@@ -435,7 +436,7 @@ class Did {
 		header.alg = this._getJwkKeyAlg(jwkPubKey);
 		header.jwk = {crv: jwkPubKey.crv, kty: jwkPubKey.kty, x: jwkPubKey.x, y: jwkPubKey.y};
 
-		const agent = await this.getNaturalPersonAgent(alg);
+		const agent = await this.getNaturalPersonAgent(alg, (options.did_method ? options.did_method : 'ebsi'));
 		const kid = agent.kid;
 
 		header.kid = kid;
@@ -448,7 +449,7 @@ class Did {
 		body.iat = this._getTimeStamp();
 
 		//let jwt = await this._createJWT(header, body, header.alg);
-		let jwt = await this.createDidJWT(header, body, alg)
+		let jwt = await this.createDidJWT(header, body, alg, (options.did_method ? options.did_method : 'ebsi'))
 		.catch(err => {
 			console.log(err)
 		});
@@ -479,7 +480,7 @@ class Did {
 		let resource;
 		let postdata;
 
-		const agent = await this.getNaturalPersonAgent(alg);
+		const agent = await this.getNaturalPersonAgent(alg, (options.did_method ? options.did_method : 'ebsi'));
 		const kid = agent.kid;
 		
 		let keySet = await this._getKeySet(alg);
@@ -510,17 +511,18 @@ class Did {
 	}
 
 	// verifiable presentations
-	async createVerifiablePresentationJWT(aud, vcJwt, alg) {
+	async createVerifiablePresentationJWT(aud, vcJwt, alg, options) {
 		var session = this.session;
 
 		const uuid = require('uuid');
 		let uuidv4 = uuid.v4;
 		let nonce = uuidv4();
+		let submission_id = uuidv4();
 
 		const vc = (await this._decodeJWT(vcJwt)).payload.vc;
 		let keySet = await this._getKeySet(alg);
 
-		const agent = await this.getNaturalPersonAgent(alg);
+		const agent = await this.getNaturalPersonAgent(alg, (options && options.did_method ? options.did_method : 'ebsi'));
 		const kid = agent.kid;
 
 		var crossJwkPubKey = keySet.jwkKeyPair.publicKey;
@@ -552,7 +554,7 @@ class Did {
 		body._vp_token = {
 			presentation_submission: {
 			  definition_id: "conformance_mock_vp_request",
-			  id: "VA presentation PrimusMoney",
+			  id: submission_id,
 			  descriptor_map: [
 				{
 				  id: "conformance_mock_vp",
@@ -564,7 +566,7 @@ class Did {
 		};
 
 
-		//id_token = await this.createDidJWT(header, body, alg);
+		//id_token = await this.createDidJWT(header, body, alg, (options.did_method ? options.did_method : 'ebsi'));
 		id_token = await this._createJWT(header, body, header.alg); // to keep body.iss = 'https://self-isued.me'
 		
 		// vp_token
@@ -591,7 +593,7 @@ class Did {
 		body.vp = vp;
 		body.nonce = nonce;
 
-		vp_token = await this.createDidJWT(header, body, alg);
+		vp_token = await this.createDidJWT(header, body, alg, (options.did_method ? options.did_method : 'ebsi'));
 
 		return {id_token, vp_token};
 	}
@@ -654,6 +656,14 @@ class Did {
 	// static
 	static getObject(session, keyuuid) {
 		return new Did(session, keyuuid);
+	}
+
+	static getObjectFromKeySet(session, keySet) {
+		let did = new Did(session);
+
+		did.keySet = keySet;
+
+		return did;
 	}
 }
 

@@ -209,7 +209,7 @@ var Module = class {
 
 				openid_url += '&nonce=' + (params.nonce ? params.nonce : session.guid());
 				
-				openid_url += '&conformance=' + sessionuuid;
+				openid_url += '&conformance=' + (params.conformance ? params.conformance : sessionuuid);
 
 				/* openid_url += '&claims='  */
 
