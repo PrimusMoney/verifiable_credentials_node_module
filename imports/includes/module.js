@@ -244,6 +244,54 @@ var Module = class {
 		return false;
 	}
 
+	async runTestEbsiServer(session) {
+		var global = this.global;
+		var _apicontrollers = this._getClientAPI();
+
+		try {
+ 			const EBSIServer = global.getModuleClass('crypto-did', 'EBSIServer');
+
+			// conformance
+			let ebsi_server_conformance = EBSIServer.getObject(session, 'conformance');
+
+			let conformance_openid_configuration = await ebsi_server_conformance.authorisation_openid_configuration();
+			let conformance_authorisation_jwks = await ebsi_server_conformance.authorisation_jwks();
+			let conformance_authorisation_presentation_definitions = await ebsi_server_conformance.authorisation_presentation_definitions('openid didr_write');
+			let conformance_authorisation_token = await ebsi_server_conformance.authorisation_token( 'authorization_code', '', 'openid didr_write').catch(err => {});
+
+			let conformance_schema_list = await ebsi_server_conformance.schema_list();
+			let conformance_schema_list_10_50 = await ebsi_server_conformance.schema_list(1, 50);
+
+			let conformance_did_registry_identifiers = await ebsi_server_conformance.did_registry_identifiers();
+
+			// conformance as issuer
+			let conformance_openid_credential_issuer = await ebsi_server_conformance.issuer_openid_credential();
+
+
+
+			// pilot
+			let ebsi_server_pilot = EBSIServer.getObject(session, 'pilot');
+
+			let pilot_openid_configuration = await ebsi_server_pilot.authorisation_openid_configuration();
+			let pilot_authorisation_jwks = await ebsi_server_pilot.authorisation_jwks();
+			let pilot_authorisation_presentation_definitions = await ebsi_server_pilot.authorisation_presentation_definitions('openid tir_invite');
+			let pilot_authorisation_token = await ebsi_server_pilot.authorisation_token( "vp_token", '', 'openid didr_write');
+
+			let pilot_schema_list = await ebsi_server_pilot.schema_list();
+
+			let pilot_did_registry_identifiers = await ebsi_server_pilot.did_registry_identifiers();
+
+
+			return true;
+	
+		}
+		catch(e) {
+			console.log('exception in runTestEbsiServer: ' + e);
+		}
+
+		return false;
+	}
+
 	async runTestJWT(session, keyuuid) {
 		var global = this.global;
 		var _apicontrollers = this._getClientAPI();

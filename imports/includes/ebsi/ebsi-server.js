@@ -1,26 +1,42 @@
 class EBSIServer {
-	constructor(session, type) {
+	constructor(session, type, versions) {
 		this.session = session;
+		this.type = (type ? type : 'conformance');
 
 		switch(type) {
-			case 'conformance':
-				this.rest_url = 'https://api-conformance.ebsi.eu'
-				break;
+			case 'conformance': {
+				this.rest_url = 'https://api-conformance.ebsi.eu';
+				this.versions = (versions ? versions : 
+					{ authorisation: 'v3', did_registry: 'v4', trusted_schemas_registry: 'v2'});
+			}
+			break;
 
-			case 'pilot':
-				this.rest_url = 'https://api-pilot.ebsi.eu'
-				break;
+			case 'pilot': {
+				this.rest_url = 'https://api-pilot.ebsi.eu';
+				this.versions = (versions ? versions : 
+					{ authorisation: 'v3', did_registry: 'v4', trusted_schemas_registry: 'v2'});
+			}
+			break;
 	
-			case 'production':
-				this.rest_url = 'https://api.ebsi.eu'
-				break;
-
 			default:
-				this.rest_url = 'https://api-conformance.ebsi.eu'
-				break;
+			case 'production': {
+				this.rest_url = 'https://api.ebsi.eu';
+
+			}
+			break;
 		}
 	}
 
+	cloneRestConnection() {
+		var session = this.session;
+		var global = session.getGlobalObject();
+		
+		const AsyncRestConnection = global.getModuleClass('crypto-did', 'AsyncRestConnection');
+
+	    var cloned_rest_connection = new AsyncRestConnection(session, this.rest_url);
+
+		return cloned_rest_connection;
+	}
 
 	getRestConnection() {
 		if (this.rest_connection)
@@ -31,7 +47,7 @@ class EBSIServer {
 		
 		const AsyncRestConnection = global.getModuleClass('crypto-did', 'AsyncRestConnection');
 
-	    this.rest_connection = new AsyncRestConnection(session, this.rest_url);
+		this.rest_connection = new AsyncRestConnection(session, this.rest_url);
 		
 		return this.rest_connection;
 	}
@@ -253,13 +269,216 @@ class EBSIServer {
 	
 	
 	// rest api
-	async schema_list() {
-		var resource = "/trusted-schemas-registry/v2/schemas";
+
+	//
+	// authorisation
+	async authorisation_openid_configuration() {
+		var type = this.type;
+		var version = this.versions.authorisation;
+
+		var resource;
+
+		switch(type) {
+			case 'conformance':
+				resource = '/conformance/' + version + '/auth-mock/.well-known/openid-configuration';
+				break;
+
+			case 'pilot':
+				resource = '/authorisation/' + version + '/.well-known/openid-configuration';
+				break;
+	
+			case 'production':
+				resource = '';
+				break;
+
+			default:
+				resource = '';
+				break;
+		}
 
 		var res = await this.rest_get(resource);
 
 		return res;
 	}
+
+	async authorisation_jwks() {
+		var type = this.type;
+		var version = this.versions.authorisation;
+
+		var resource;
+
+		switch(type) {
+			case 'conformance':
+				resource = '/conformance/' + version + '/auth-mock/jwks';
+				break;
+
+			case 'pilot':
+				resource = '/authorisation/' + version + '/jwks';
+				break;
+	
+			case 'production':
+				resource = '';
+				break;
+
+			default:
+				resource = '';
+				break;
+		}
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+	async authorisation_presentation_definitions(scope) {
+		var type = this.type;
+		var version = this.versions.authorisation;
+
+		var resource;
+
+		switch(type) {
+			case 'conformance':
+				resource = '/conformance/' + version + '/auth-mock/presentation-definitions';
+				break;
+
+			case 'pilot':
+				resource = '/authorisation/' + version + '/presentation-definitions';
+				break;
+	
+			case 'production':
+				resource = '';
+				break;
+
+			default:
+				resource = '';
+				break;
+		}
+
+		resource += '?scope=' + encodeURI(scope);
+
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+	async authorisation_token(grant_type, presentation_submission, scope, vp_token) {
+		var type = this.type;
+		var version = this.versions.authorisation;
+
+		var resource;
+
+		switch(type) {
+			case 'conformance':
+				resource = '/conformance/' + version + '/auth-mock/token';
+				break;
+
+			case 'pilot':
+				resource = '/authorisation/' + version + '/token';
+				break;
+	
+			case 'production':
+				resource = '';
+				break;
+
+			default:
+				resource = '';
+				break;
+		}
+
+		var rest_connection = this.cloneRestConnection();
+		rest_connection.content_type = 'application/x-www-form-urlencoded';
+
+		var postdata;
+		postdata = 'grant_type=' + grant_type;
+		postdata += '&presentation_submission=' + presentation_submission;
+		postdata += '&scope=' + scope;
+		postdata += '&vp_token=' + vp_token;
+
+		var res = await rest_connection.rest_post(resource, postdata);
+
+		return res;
+	}
+
+	
+	//
+	// did registry
+	async did_registry_identifiers(pageafter, pagesize) {
+		var type = this.type;
+		var version = this.versions.did_registry;
+
+		var resource = "/did-registry/" + version + "/identifiers";
+
+		if (pageafter || pagesize) resource += '?';
+
+		resource += (pageafter ? 'page[after]=' + pageafter : '');
+		resource += (pagesize ? '&page[size]=' + pagesize : '');
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+
+	//
+	// schemas
+	async schema_list(pageafter, pagesize) {
+		var type = this.type;
+		var version = this.versions.trusted_schemas_registry;
+
+		var resource = "/trusted-schemas-registry/" + version + "/schemas";
+
+		if (pageafter || pagesize) resource += '?';
+
+		resource += (pageafter ? 'page[after]=' + pageafter : '');
+		resource += (pagesize ? '&page[size]=' + pagesize : '');
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+
+	//
+	// Issuer
+	//
+
+	async issuer_openid_credential() {
+		var type = this.type;
+		var version = this.versions.authorisation;
+
+		var resource;
+
+		switch(type) {
+			case 'conformance':
+				resource = '/conformance/v3/issuer-mock/.well-known/openid-credential-issuer';
+				break;
+
+			case 'pilot':
+				resource = '';
+				break;
+	
+			case 'production':
+				resource = '';
+				break;
+
+			default:
+				resource = '';
+				break;
+		}
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+
+
+
+	// static
+	static getObject(session, type, version) {
+		return new EBSIServer(session, type, version);
+	}	
 
 }
 

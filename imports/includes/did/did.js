@@ -123,7 +123,7 @@ class Did {
 
 			case 'ebsi': {
 				const EBSIServer = global.getModuleClass('crypto-did', 'EBSIServer');
-				let ebsi_server = new EBSIServer(session);
+				let ebsi_server = EBSIServer.getObject(session);
 		
 				let _ebsi_did = await ebsi_server.createDid(keySet, 'ebsi', type);		
 				return _ebsi_did;
@@ -131,7 +131,7 @@ class Did {
 
 			case 'key': {
 				const EBSIServer = global.getModuleClass('crypto-did', 'EBSIServer');
-				let ebsi_server = new EBSIServer(session);
+				let ebsi_server = EBSIServer.getObject(session);
 		
 				let _key_did = await ebsi_server.createDid(keySet, 'key', type);		
 				return _key_did;
@@ -241,7 +241,7 @@ class Did {
 		switch (did_method) {
 			case 'ebsi': {
 				const EBSIServer = global.getModuleClass('crypto-did', 'EBSIServer');
-				let ebsi_server = new EBSIServer(session);
+				let ebsi_server = EBSIServer.getObject(session);
 		
 				let _ebsi_agent = await ebsi_server.getNaturalPersonAgent(keySet, alg);
 
@@ -289,6 +289,8 @@ class Did {
 			case 'initiate_issuance': {
 				let rest_connection_initiate_issuance = this._createRestConnection(rest_url);
 
+				// TODO: we can use params.flow_type to distinguish between EBSI's v2 and v3 conformance
+
 				rest_connection_initiate_issuance.addToHeader({key: 'conformance', value: params.conformance});
 		
 				// cross
@@ -305,6 +307,8 @@ class Did {
 
 			case 'initiate_verification': {
 				let rest_connection_initiate_verification = this._createRestConnection(rest_url);
+
+				// TODO: we can use params.flow_type to distinguish between EBSI's v2 and v3 conformance
 
 				rest_connection_initiate_verification.addToHeader({key: 'conformance', value: params.conformance});
 				

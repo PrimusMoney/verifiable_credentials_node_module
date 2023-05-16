@@ -25,16 +25,20 @@ class AsyncRestConnection {
 				}
 
 				if (jsonresponse) {
-					const URL = require("url");
-					let parsedUrl = URL.parse(xhttp.responseURL, true);
-					let {query} = parsedUrl;
+					if (xhttp.responseURL) {
+						// enrich with state and code in case of 302 answer
+						const URL = require("url");
+						let parsedUrl = URL.parse(xhttp.responseURL, true);
+						let {query} = parsedUrl;
+	
+						// overload json if we are back from dummy redirect
+						if (query && query.state)
+							jsonresponse.state = (jsonresponse.state ? jsonresponse.state : query.state);
+	
+						if (query && query.code)
+							jsonresponse.code = (jsonresponse.code ? jsonresponse.code : query.code);
+					}
 
-					// overload json if we are back from dummy redirect
-					if (query && query.state)
-						jsonresponse.state = (jsonresponse.state ? jsonresponse.state : query.state);
-
-					if (query && query.code)
-						jsonresponse.code = (jsonresponse.code ? jsonresponse.code : query.code);
 
 					callback(null, jsonresponse);
 				}
