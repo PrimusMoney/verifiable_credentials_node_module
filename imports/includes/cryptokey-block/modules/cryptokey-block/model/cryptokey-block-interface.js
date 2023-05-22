@@ -3,17 +3,84 @@
  */
  'use strict';
 
- var CryptoKeyBlockInterface = class {
+var KeySet = class {
+	constructor(session) {
+		this.session = session;
+
+		this.keyuuid = null;
+		this.hexPrivateKey = null;
+		this.alg = null;
+	}
+
+	canExportHexPrivateKey() {
+		// TODO: go through cryptokeyblockaccessinstance
+		if (this.hexPrivateKey)
+		return true;
+	}
+
+	async exportHexPrivateKey() {
+		// TODO: go through cryptokeyblockaccessinstance
+		return this.hexPrivateKey;
+	}
+
+	async getAesPublicKeys() {
+		// TODO: go through cryptokeyblockaccessinstance
+		var session = this.session;
+		var global = session.getGlobalObject();
+
+		let cryptokeyblockmodule = global.getModuleObject('cryptokey-block');
+		let cryptokeyblockinterface = cryptokeyblockmodule.getCryptoKeyBlockInterface();
+		let keyuuid = this.keyuuid;
+
+		if (!keyuuid && this.hexPrivateKey) {
+			keyuuid = session.guid();
+
+			let cryptokey = session.createBlankCryptoKeyObject();
+
+			cryptokey.setKeyUUID(keyuuid);
+			cryptokey.setPrivateKey(this.hexPrivateKey);
+
+			session.addCryptoKeyObject(cryptokey);
+
+			let user = session.getSessionUserObject();
+	
+			if (user) user.addCryptoKeyObject(cryptokey);
+		}
+
+		let aes_pub_keys = await cryptokeyblockinterface.getPublicKeys(session, {keyuuid, curve: 'secp256k1'});
+
+		return aes_pub_keys;
+	}
+}
+
+var CryptoKeyBlockInterface = class {
 	 constructor(module) {
 		 this.module = module;
 		 this.global = module.global;
 		 
 		 this.cryptokey_server_access_instance = null;
-	 }
+	}
+
+	async createKeySet(session, hexPrivateKey, alg) {
+		let keySet = new KeySet(session);
+
+		keySet.hexPrivateKey = hexPrivateKey;
+		keySet.alg = alg;
+		
+		return keySet;
+	}
+	
+	async getKeySet(session, keyuuid) {
+		let keySet = new KeySet(session);
+
+		keySet.keyuuid = keyuuid;
+		
+		return keySet;
+	}
 	 
-	 getCryptoKeyBlockAccessInstance(session) {
-		 if (this.cryptokey_server_access_instance)
-			 return this.cryptokey_server_access_instance;
+	getCryptoKeyBlockAccessInstance(session) {
+		 if (session.cryptokey_server_access_instance)
+			 return session.cryptokey_server_access_instance;
 		 
 		 console.log('instantiating CryptoKeyBlockAccess');
 		 
@@ -30,20 +97,19 @@
 		 var inputparams = [];
 		 
 		 inputparams.push(this);
+		 inputparams.push(session);
 		 
 		 var ret = global.invokeHooks('getCryptoKeyBlockAccessInstance_hook', result, inputparams);
 		 
 		 if (ret && result[0]) {
-			 this.cryptokey_server_access_instance = result[0];
+			session.cryptokey_server_access_instance = result[0];
 		 }
 		 else {
-			 this.cryptokey_server_access_instance = new CryptoKeyBlockAccess(session, cryptokey_provider);
+			session.cryptokey_server_access_instance = new CryptoKeyBlockAccess(session, cryptokey_provider);
 		 }
- 
 		 
-		 return this.cryptokey_server_access_instance;
-		 
-	 }
+		 return session.cryptokey_server_access_instance;
+	}
 	 
 	// api
 	async generatePrivateKey(session) {

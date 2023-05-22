@@ -1,6 +1,6 @@
 {
   "name": "@primusmoney/verifiable_credentials",
-  "version": "0.30.21",
+  "version": "0.30.22",
   "author": "PrimusMoney",
   "homepage": "http://www.primusmoney.com/",
   "license": "UNLICENSED",
@@ -12,7 +12,7 @@
     "test:node": "mocha ./tests/tests.js"
   },
   "dependencies": {
-    "@p2pmoney-org/ethereum_core": "^0.30.10"
+    "@primusmoney/client_wallet": "^0.30.20"
   },
   "devDependencies": {
     "chai": "^4.2.0",

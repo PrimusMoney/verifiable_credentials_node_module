@@ -251,7 +251,8 @@ var Module = class {
 		try {
  			const EBSIServer = global.getModuleClass('crypto-did', 'EBSIServer');
 
-			// conformance
+			//
+			// conformance server
 			let ebsi_server_conformance = EBSIServer.getObject(session, 'conformance');
 
 			let conformance_openid_configuration = await ebsi_server_conformance.authorisation_openid_configuration();
@@ -259,17 +260,33 @@ var Module = class {
 			let conformance_authorisation_presentation_definitions = await ebsi_server_conformance.authorisation_presentation_definitions('openid didr_write');
 			let conformance_authorisation_token = await ebsi_server_conformance.authorisation_token( 'authorization_code', '', 'openid didr_write').catch(err => {});
 
-			let conformance_schema_list = await ebsi_server_conformance.schema_list();
-			let conformance_schema_list_10_50 = await ebsi_server_conformance.schema_list(1, 50);
+
+			let conformance_issuer_list = await ebsi_server_conformance.trusted_issuers_registry_issuers();
+			let conformance_first_issuer_list = await ebsi_server_conformance.trusted_issuers_registry_issuer(conformance_issuer_list.items[0].did);
+
+
+			let conformance_schema_list = await ebsi_server_conformance.trusted_schemas_registry_schemas();
+			let conformance_schema_list_10_50 = await ebsi_server_conformance.trusted_schemas_registry_schemas(1, 50);
+			let conformance_first_schema = await ebsi_server_conformance.trusted_schemas_registry_schema(conformance_schema_list.items[0].schemaId);
+			let conformance_schema_policies = await ebsi_server_conformance.trusted_schemas_registry_policies();
+			let conformance_schema_first_policy = await ebsi_server_conformance.trusted_schemas_registry_policy(conformance_schema_policies.items[0].policyId);
+
+			let conformance_policy_list = await ebsi_server_conformance.trusted_policies_registry_policies();
+			let conformance_first_policy = await ebsi_server_conformance.trusted_policies_registry_policy(conformance_policy_list.items[0].policyName);
+			let conformance_policy_users = await ebsi_server_conformance.trusted_policies_registry_users();
+			let conformance_policy_first_user = await ebsi_server_conformance.trusted_policies_registry_user(conformance_policy_users.items[0].address);
+
 
 			let conformance_did_registry_identifiers = await ebsi_server_conformance.did_registry_identifiers();
+			let conformance_first_did = await ebsi_server_conformance.did_registry_did_document(conformance_did_registry_identifiers.items[0].did);
 
 			// conformance as issuer
 			let conformance_openid_credential_issuer = await ebsi_server_conformance.issuer_openid_credential();
 
 
 
-			// pilot
+			//
+			// pilot server
 			let ebsi_server_pilot = EBSIServer.getObject(session, 'pilot');
 
 			let pilot_openid_configuration = await ebsi_server_pilot.authorisation_openid_configuration();
@@ -277,7 +294,7 @@ var Module = class {
 			let pilot_authorisation_presentation_definitions = await ebsi_server_pilot.authorisation_presentation_definitions('openid tir_invite');
 			let pilot_authorisation_token = await ebsi_server_pilot.authorisation_token( "vp_token", '', 'openid didr_write');
 
-			let pilot_schema_list = await ebsi_server_pilot.schema_list();
+			let pilot_schema_list = await ebsi_server_pilot.trusted_schemas_registry_schemas();
 
 			let pilot_did_registry_identifiers = await ebsi_server_pilot.did_registry_identifiers();
 

@@ -38,9 +38,7 @@ var VerifiableCredentialsServerInterface = class {
 			session.verifiablecredentials_server_access_instance = new VerifiableCredentialsServerAccess(session);
 		}
 
-		
 		return session.verifiablecredentials_server_access_instance;
-		
 	}
 
 	getVerifiableCredentialsServerSocketInstance(session) {

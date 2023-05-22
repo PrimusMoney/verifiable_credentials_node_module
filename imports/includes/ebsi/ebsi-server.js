@@ -7,14 +7,14 @@ class EBSIServer {
 			case 'conformance': {
 				this.rest_url = 'https://api-conformance.ebsi.eu';
 				this.versions = (versions ? versions : 
-					{ authorisation: 'v3', did_registry: 'v4', trusted_schemas_registry: 'v2'});
+					{ authorisation: 'v3', did_registry: 'v4', trusted_issuers_registry: 'v4', trusted_policies_registry: 'v2', trusted_schemas_registry: 'v2'});
 			}
 			break;
 
 			case 'pilot': {
 				this.rest_url = 'https://api-pilot.ebsi.eu';
 				this.versions = (versions ? versions : 
-					{ authorisation: 'v3', did_registry: 'v4', trusted_schemas_registry: 'v2'});
+					{ authorisation: 'v3', did_registry: 'v4', trusted_issuers_registry: 'v4', trusted_policies_registry: 'v2', trusted_schemas_registry: 'v2'});
 			}
 			break;
 	
@@ -267,8 +267,8 @@ class EBSIServer {
 		return verification;
 	}
 	
-	
-	// rest api
+	//
+	// rest api (specific for Conformance)
 
 	//
 	// authorisation
@@ -400,49 +400,8 @@ class EBSIServer {
 		return res;
 	}
 
-	
-	//
-	// did registry
-	async did_registry_identifiers(pageafter, pagesize) {
-		var type = this.type;
-		var version = this.versions.did_registry;
-
-		var resource = "/did-registry/" + version + "/identifiers";
-
-		if (pageafter || pagesize) resource += '?';
-
-		resource += (pageafter ? 'page[after]=' + pageafter : '');
-		resource += (pagesize ? '&page[size]=' + pagesize : '');
-
-		var res = await this.rest_get(resource);
-
-		return res;
-	}
-
-
-	//
-	// schemas
-	async schema_list(pageafter, pagesize) {
-		var type = this.type;
-		var version = this.versions.trusted_schemas_registry;
-
-		var resource = "/trusted-schemas-registry/" + version + "/schemas";
-
-		if (pageafter || pagesize) resource += '?';
-
-		resource += (pageafter ? 'page[after]=' + pageafter : '');
-		resource += (pagesize ? '&page[size]=' + pagesize : '');
-
-		var res = await this.rest_get(resource);
-
-		return res;
-	}
-
-
 	//
 	// Issuer
-	//
-
 	async issuer_openid_credential() {
 		var type = this.type;
 		var version = this.versions.authorisation;
@@ -472,6 +431,192 @@ class EBSIServer {
 		return res;
 	}
 
+
+
+
+	//
+	// REST API
+	//
+
+
+	//
+	// authorisation
+	async trusted_issuers_registry_issuers(pageafter, pagesize) {
+		var type = this.type;
+		var version = this.versions.trusted_issuers_registry;
+
+		var resource = "/trusted-issuers-registry/" + version + "/issuers";
+
+		if (pageafter || pagesize) resource += '?';
+
+		resource += (pageafter ? 'page[after]=' + pageafter : '');
+		resource += (pagesize ? '&page[size]=' + pagesize : '');
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+	async trusted_issuers_registry_issuer(did) {
+		var type = this.type;
+		var version = this.versions.trusted_issuers_registry;
+
+		var resource = "/trusted-issuers-registry/" + version + "/issuers";
+
+		resource += '/' + did;
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+
+
+	
+	//
+	// did registry
+	async did_registry_identifiers(pageafter, pagesize) {
+		var type = this.type;
+		var version = this.versions.did_registry;
+
+		var resource = "/did-registry/" + version + "/identifiers";
+
+		if (pageafter || pagesize) resource += '?';
+
+		resource += (pageafter ? 'page[after]=' + pageafter : '');
+		resource += (pagesize ? '&page[size]=' + pagesize : '');
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+	async did_registry_did_document(did) {
+		var type = this.type;
+		var version = this.versions.did_registry;
+
+		var resource = "/did-registry/" + version + "/identifiers/" + did;
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+
+	//
+	// trusted policies registry
+	async trusted_policies_registry_policies(pageafter, pagesize) {
+		var type = this.type;
+		var version = this.versions.trusted_policies_registry;
+
+		var resource = "/trusted-policies-registry/" + version + "/policies";
+
+		if (pageafter || pagesize) resource += '?';
+
+		resource += (pageafter ? 'page[after]=' + pageafter : '');
+		resource += (pagesize ? '&page[size]=' + pagesize : '');
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+	async trusted_policies_registry_policy(policyId) {
+		var type = this.type;
+		var version = this.versions.trusted_schemas_registry;
+
+		var resource = "/trusted-policies-registry/" + version + "/policies/" + policyId;
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+	async trusted_policies_registry_users(pageafter, pagesize) {
+		var type = this.type;
+		var version = this.versions.trusted_schemas_registry;
+
+		var resource = "/trusted-policies-registry/" + version + "/users";
+
+		if (pageafter || pagesize) resource += '?';
+
+		resource += (pageafter ? 'page[after]=' + pageafter : '');
+		resource += (pagesize ? '&page[size]=' + pagesize : '');
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+	async trusted_policies_registry_user(address) {
+		var type = this.type;
+		var version = this.versions.trusted_schemas_registry;
+
+		var resource = "/trusted-policies-registry/" + version + "/users/" + address;
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+
+
+
+	//
+	// trusted schemas registry
+	async trusted_schemas_registry_schemas(pageafter, pagesize) {
+		var type = this.type;
+		var version = this.versions.trusted_schemas_registry;
+
+		var resource = "/trusted-schemas-registry/" + version + "/schemas";
+
+		if (pageafter || pagesize) resource += '?';
+
+		resource += (pageafter ? 'page[after]=' + pageafter : '');
+		resource += (pagesize ? '&page[size]=' + pagesize : '');
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+	async trusted_schemas_registry_schema(schemaId) {
+		var type = this.type;
+		var version = this.versions.trusted_schemas_registry;
+
+		var resource = "/trusted-schemas-registry/" + version + "/schemas/" + schemaId;
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+	async trusted_schemas_registry_policies(pageafter, pagesize) {
+		var type = this.type;
+		var version = this.versions.trusted_schemas_registry;
+
+		var resource = "/trusted-schemas-registry/" + version + "/policies";
+
+		if (pageafter || pagesize) resource += '?';
+
+		resource += (pageafter ? 'page[after]=' + pageafter : '');
+		resource += (pagesize ? '&page[size]=' + pagesize : '');
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+	async trusted_schemas_registry_policy(policyId) {
+		var type = this.type;
+		var version = this.versions.trusted_schemas_registry;
+
+		var resource = "/trusted-schemas-registry/" + version + "/policies/" + policyId;
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
 
 
 

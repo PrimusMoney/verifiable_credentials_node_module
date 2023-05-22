@@ -95,27 +95,7 @@ class Did {
 
 		switch(did_method) {
 			case 'ethr': {
-				let cryptokeyblockmodule = global.getModuleObject('cryptokey-block');
-				let cryptokeyblockinterface = cryptokeyblockmodule.getCryptoKeyBlockInterface();
-				let keyuuid = this.keyuuid;
-
-				if (!keyuuid && keySet.hexPrivateKey) {
-					keyuuid = session.guid();
-
-					let cryptokey = session.createBlankCryptoKeyObject();
-
-					cryptokey.setKeyUUID(keyuuid);
-					cryptokey.setPrivateKey(keySet.hexPrivateKey);
-
-					session.addCryptoKeyObject(cryptokey);
-
-					let user = session.getSessionUserObject();
-			
-					if (user) user.addCryptoKeyObject(cryptokey);
-				}
-		
-				let aes_pub_keys = await cryptokeyblockinterface.getPublicKeys(session, {keyuuid, curve: 'secp256k1'});
-		
+				let aes_pub_keys = await keySet.getAesPublicKeys();
 				let _ethr_did = 'did:ethr:' + aes_pub_keys.address;
 		
 				return _ethr_did;

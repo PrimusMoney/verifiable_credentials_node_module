@@ -49,7 +49,10 @@ class JWT {
 			case 'ES256K': {
 				const jsontokens = require('jsontokens');
 
-				let priv_key = keySet.hexPrivateKey;
+				if (!keySet.canExportHexPrivateKey())
+					throw new Error('key set can not export private key');
+
+				let priv_key = await keySet.exportHexPrivateKey();
 
 				let jwt = new jsontokens.TokenSigner('ES256K', priv_key.split('x')[1]).sign(body, false, header);
 		

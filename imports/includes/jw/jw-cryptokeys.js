@@ -406,11 +406,19 @@ class JwCryptoKeys {
 
 		return jwkKeyPair;
 	}
+	
 
 	async _computeKeySet(session, hexPrivateKey, alg) {
+		var session = this.session;
+		var global = session.getGlobalObject();
+
+		var cryptokeyblockmodule = global.getModuleObject('cryptokey-block');
+		var cryptokeyblockinterface = cryptokeyblockmodule.getCryptoKeyBlockInterface();
+
+
 		let cryptoKeyPair;
 
-		let keySet = {alg, hexPrivateKey};
+		let keySet = await cryptokeyblockinterface.createKeySet(session, hexPrivateKey, alg);
 
 		switch(alg) {
 			case 'ES256K': {
@@ -452,9 +460,15 @@ class JwCryptoKeys {
 		var cryptokeyblockmodule = global.getModuleObject('cryptokey-block');
 		var cryptokeyblockinterface = cryptokeyblockmodule.getCryptoKeyBlockInterface();
 
+		// TODO: use cryptokeyblockinterface.getKeySet(session, keyuuid)
+		// when hexPrivateKey is not accessible in memory
 		const hexPrivateKey = await cryptokeyblockinterface.exportPrivateKey(session, keyuuid);
 
-		return this._computeKeySet(session, hexPrivateKey, alg);
+		var keySet = await this._computeKeySet(session, hexPrivateKey, alg);
+
+		keySet.keyuuid = keyuuid;
+
+		return keySet;
 	}
 
 	// static

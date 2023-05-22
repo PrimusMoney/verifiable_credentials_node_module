@@ -9,7 +9,7 @@ class CryptoKeyBlockAccess {
 
 	_getEncryptionAlg(keySet) {
 		if (keySet.encryption && keySet.encryption.alg)
-			return keySet.encryption.al;
+			return keySet.encryption.alg;
 
 		// encryption familly
 		let _encr_kty = (keySet.encryption && keySet.encryption.kty ? keySet.encryption.kty : null);

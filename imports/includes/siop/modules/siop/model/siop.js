@@ -12,8 +12,8 @@ var SiopServerInterface = class {
 	}
 	
 	getSiopServerAccessInstance(session) {
-		if (this.siop_server_access_instance)
-			return this.siop_server_access_instance;
+		if (session.siop_server_access_instance)
+			return session.siop_server_access_instance;
 		
 		console.log('instantiating SiopServerAccess');
 		
@@ -26,19 +26,18 @@ var SiopServerInterface = class {
 		var inputparams = [];
 		
 		inputparams.push(this);
+		inputparams.push(session);
 		
 		var ret = global.invokeHooks('getSiopServerAccessInstance', result, inputparams);
 		
 		if (ret && result[0]) {
-			this.siop_server_access_instance = result[0];
+			session.siop_server_access_instance = result[0];
 		}
 		else {
-			this.siop_server_access_instance = new SiopServerAccess(session);
+			session.siop_server_access_instance = new SiopServerAccess(session);
 		}
-
 		
-		return this.siop_server_access_instance;
-		
+		return session.siop_server_access_instance;
 	}
 	
 	// api
