@@ -165,7 +165,12 @@ class Did {
 		const JWT = global.getModuleClass('crypto-did', 'JWT');
 		const jwt = JWT.getObject(session, header, body)
 
-		return jwt.createJWT(this.keyuuid, alg)
+		if (this.keyuuid)
+		return jwt.createJWT(this.keyuuid, alg);
+		else if (this.keySet)
+		return jwt._createJWTFromKeySet(this.keySet);
+		else
+		return Promise.reject('can not create jwt, keySet is missing in did object')
 	}
 
 	async _decodeJWT(jwt) {
@@ -237,6 +242,42 @@ class Did {
 
 		return agent;
 	}
+
+	async getLegalPersonAgent(alg, did_method) {
+		var session = this.session;
+		var global = session.getGlobalObject();
+
+		let keySet = await this._getKeySet(alg);
+		let agent = {};
+
+		switch (did_method) {
+			case 'ebsi': {
+				agent.did = await this.getDid(alg, did_method, 'legal');
+				agent.kid =  await this.getKid(alg, did_method, 'legal');
+			}
+			break;
+
+			default:
+				return Promise.reject('did method not supported: ' + did_method);
+
+		}
+
+		return agent;
+	}
+
+	async getPersonAgent(alg, did_method, type) {
+		switch(type) {
+			case 'natural':
+				return this.getNaturalPersonAgent(alg,did_method);
+			case 'legal':
+				return this.getLegalPersonAgent(alg,did_method);
+			default:
+				return Promise.reject('unknown person type: ' + type);
+		}
+
+	}
+
+
 
 	_createRestConnection(rest_url) {
 		const URL = require("url");
@@ -506,7 +547,9 @@ class Did {
 		const vc = (await this._decodeJWT(vcJwt)).payload.vc;
 		let keySet = await this._getKeySet(alg);
 
-		const agent = await this.getNaturalPersonAgent(alg, (options && options.did_method ? options.did_method : 'ebsi'));
+		const agent = await this.getPersonAgent(alg, 
+												(options && options.did_method ? options.did_method : 'ebsi'),
+												(options && options.type ? options.type : 'natural'));
 		const kid = agent.kid;
 
 		var crossJwkPubKey = keySet.jwkKeyPair.publicKey;
@@ -571,13 +614,14 @@ class Did {
 		body.nbf = this._getTimeStamp();
 		body.aud = aud;
 
-		body.exp = this._getTimeStamp();
+		body.exp = this._getTimeStamp() + 3600;
 		body.sub = agent.did;
 		body.iss = agent.did;
 		body.vp = vp;
 		body.nonce = nonce;
 
-		vp_token = await this.createDidJWT(header, body, alg, (options.did_method ? options.did_method : 'ebsi'));
+		vp_token = await this.createDidJWT(header, body, alg, (options.did_method ? options.did_method : 'ebsi'),
+											(options && options.type ? options.type : 'natural'));
 
 		return {id_token, vp_token};
 	}

@@ -7,14 +7,16 @@ class EBSIServer {
 			case 'conformance': {
 				this.rest_url = 'https://api-conformance.ebsi.eu';
 				this.versions = (versions ? versions : 
-					{ authorisation: 'v3', did_registry: 'v4', trusted_issuers_registry: 'v4', trusted_policies_registry: 'v2', trusted_schemas_registry: 'v2'});
+					{ authorisation: 'v3', did_registry: 'v4', time_stamps: 'v3',
+					trusted_issuers_registry: 'v4', trusted_policies_registry: 'v2', trusted_schemas_registry: 'v2'});
 			}
 			break;
 
 			case 'pilot': {
 				this.rest_url = 'https://api-pilot.ebsi.eu';
 				this.versions = (versions ? versions : 
-					{ authorisation: 'v3', did_registry: 'v4', trusted_issuers_registry: 'v4', trusted_policies_registry: 'v2', trusted_schemas_registry: 'v2'});
+					{ authorisation: 'v3', did_registry: 'v4', time_stamps: 'v3',
+					trusted_issuers_registry: 'v4', trusted_policies_registry: 'v2', trusted_schemas_registry: 'v2'});
 			}
 			break;
 	
@@ -502,6 +504,36 @@ class EBSIServer {
 		return res;
 	}
 
+	//
+	// time stamps
+	async timestamp_timestamps(pageafter, pagesize) {
+		var type = this.type;
+		var version = this.versions.time_stamps;
+
+		var resource = "/timestamp/" + version + "/timestamps";
+
+		if (pageafter || pagesize) resource += '?';
+
+		resource += (pageafter ? 'page[after]=' + pageafter : '');
+		resource += (pagesize ? '&page[size]=' + pagesize : '');
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+	async timestamp_timestamp(timestampId) {
+		var type = this.type;
+		var version = this.versions.time_stamps;
+
+		var resource = "/timestamp/" + version + "/timestamps";
+
+		resource += '/' + timestampId;
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
 
 	//
 	// trusted policies registry
