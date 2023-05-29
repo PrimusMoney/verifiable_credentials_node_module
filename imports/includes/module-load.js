@@ -20,7 +20,11 @@ import './did/cryptocard.js';
 import './did/did.js';
 
 // ebsi
+import './ebsi/ebsi-did-document.js';
 import './ebsi/ebsi-server.js';
+import './ebsi/ebsi-trusted-issuer.js';
+import './ebsi/ebsi-trusted-policy.js';
+import './ebsi/ebsi-trusted-schema.js';
 
 // json web
 import './jw/jw-cryptokeys.js';

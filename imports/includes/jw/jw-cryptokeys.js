@@ -212,6 +212,13 @@ class JwCryptoKeys {
 		return alg;
 	}
 
+	async computeThumbprint(publicJwk, crpt) {
+		// we compute the thumbprint of publickey
+		const jose = require('jose');
+
+		return jose.calculateJwkThumbprint(publicJwk, crpt);
+	}
+
 
 	async importJwkKeyPair(privateKeyHex, signingAlg) {
 		let privKeyJWK = await this.importPrivateKeyJwk(privateKeyHex, signingAlg);

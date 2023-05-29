@@ -7,15 +7,34 @@ var KeySet = class {
 	constructor(session) {
 		this.session = session;
 
+		// keySet corresponds only to 1 alg and 1 hexPrivateKey
+		// use exportKeySet to transform
 		this.keyuuid = null;
 		this.hexPrivateKey = null;
 		this.alg = null;
-	}
+	} 
 
 	canExportHexPrivateKey() {
 		// TODO: go through cryptokeyblockaccessinstance
 		if (this.hexPrivateKey)
 		return true;
+	}
+
+	getAlg() {
+		return this.alg;
+	}
+
+	getKeyUUID() {
+		return this.keyuuid;
+	}
+
+	async exportKeySet(alg) {
+		let keySet = new KeySet(this.session);
+
+		keySet.hexPrivateKey = this.hexPrivateKey;
+		keySet.alg = this.alg;
+
+		return keySet;
 	}
 
 	async exportHexPrivateKey() {

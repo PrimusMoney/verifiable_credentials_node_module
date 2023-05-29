@@ -62,7 +62,11 @@ var Module = class {
 		modulescriptloader.push_script( moduleroot + '/did/did.js');
 
 		// ebsi
+		modulescriptloader.push_script( moduleroot + '/ebsi/ebsi-did-document.js');
 		modulescriptloader.push_script( moduleroot + '/ebsi/ebsi-server.js');
+		modulescriptloader.push_script( moduleroot + '/ebsi/ebsi-trusted-issuer.js');
+		modulescriptloader.push_script( moduleroot + '/ebsi/ebsi-trusted-policy.js');
+		modulescriptloader.push_script( moduleroot + '/ebsi/ebsi-trusted-schema.js');
 
 		// jw
 		modulescriptloader.push_script( moduleroot + '/jw/jw-cryptokeys.js');
@@ -226,11 +230,18 @@ var Module = class {
 			var keySet = await cryptokeys._computeKeySet(session, json.private_key, json.alg);
 	
 			const Did = global.getModuleClass('crypto-did', 'Did');
-			const did_obj = Did.getObjectFromKeySet(session, keySet);
+
+			json.ethr_did = await Did.buildDidFromKeySet(session, keySet, 'ethr', 'natural');
+			json.ebsi_did = await Did.buildDidFromKeySet(session, keySet, 'ebsi', 'natural');
+			json.key_did = await Did.buildDidFromKeySet(session, keySet, 'key', 'natural');
+
+
+			// OBSOLETE
+			const did_obj = await Did.buildObjectFromKeySet(session, keySet);
 	
-			json.ethr_did = await did_obj.getDid(json.alg, 'ethr', 'natural');
-			json.ebsi_did = await did_obj.getDid(json.alg, 'ebsi', 'natural');
-			json.key_did = await did_obj.getDid(json.alg, 'key', 'natural');
+			json.ethr_did_obsolete = await did_obj.getDid(json.alg, 'ethr', 'natural');
+			json.ebsi_did_obsolete = await did_obj.getDid(json.alg, 'ebsi', 'natural');
+			json.key_did_obsolete = await did_obj.getDid(json.alg, 'key', 'natural');
 
 			json.ebsi_legal_did = await did_obj.getDid(json.alg, 'ebsi', 'legal');
 

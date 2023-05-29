@@ -2,10 +2,15 @@
 
 class Did {
 
-	constructor(session, keyuuid) {
+	constructor(session, keyuuid, alg) {
 		this.session = session;
 
+		this.did = null;
+		this.did_type = null;
+
 		this.keyuuid = keyuuid;
+		this.alg = alg;
+		this.keySet = null;
 
 		this.rest_url = null;
 	}
@@ -33,7 +38,7 @@ class Did {
 	}
 
 	async createDidJWT(header, payload, alg, did_method, type) {
-		let keySet = await this._getKeySet(alg);
+		let keySet = await this._getKeySet();
 
 		//const didJWT = require('did-jwt'); // returns path to "/my-did-wallet/static/media/index.c63b8054ea38e87f580d.cjs"
 		const didJWT = await import('did-jwt');
@@ -87,48 +92,60 @@ class Did {
 
 	}
 
-	async getDid(alg, did_method, type) {
-		var session = this.session;
-		var global = session.getGlobalObject();
-
-		let keySet = await this._getKeySet(alg);
-
-		switch(did_method) {
-			case 'ethr': {
-				let aes_pub_keys = await keySet.getAesPublicKeys();
-				let _ethr_did = 'did:ethr:' + aes_pub_keys.address;
-		
-				return _ethr_did;
-			}
-
-			case 'ebsi': {
-				const EBSIServer = global.getModuleClass('crypto-did', 'EBSIServer');
-				let ebsi_server = EBSIServer.getObject(session);
-		
-				let _ebsi_did = await ebsi_server.createDid(keySet, 'ebsi', type);		
-				return _ebsi_did;
-			}
-
-			case 'key': {
-				const EBSIServer = global.getModuleClass('crypto-did', 'EBSIServer');
-				let ebsi_server = EBSIServer.getObject(session);
-		
-				let _key_did = await ebsi_server.createDid(keySet, 'key', type);		
-				return _key_did;
-			}
-
-			default:
-				return Promise.reject('did method not supported: ' + did_method);
-		}
-
+	async setDid(did) {
+		this.did = did;
 	}
 
-	async getKid(alg, did_method, type) {
-		let keySet = await this._getKeySet(alg);
+	async _computeDid(did_method, type) {
+		let keySet = await this._getKeySet();
+
+		this.did = await Did.buildDidFromKeySet(this.session, keySet, did_method, type);
+
+		return this.did;
+	}
+
+
+	async getDid(alg, did_method, type) {
+		if (alg) {
+			console.log('OBSOLETE: should not use getDid with arguments, use Did.buildDidFromKeySet instead');
+			let keySet = await this._getKeySet();
+
+			if (!keySet)
+				return Promise.reject('should have a keySet');
+
+			// compute enriched alt_keySet
+			if (!keySet.canExportHexPrivateKey())
+			throw new Error('key set can not export private key');
+		
+			let hexPrivateKey = await keySet.exportHexPrivateKey();
+
+			const cryptokeys = this._getCryptoKeysObject();
+			let alt_keySet = await cryptokeys._computeKeySet(this.session, hexPrivateKey, alg)
+
+			let alt_did = await Did.buildDidFromKeySet(this.session, alt_keySet, did_method, type);
+
+			let alt_did_obj = Did.getObjectFromKeySet(this.session, alt_keySet, alt_did, type);
+
+			return alt_did_obj.getDid();
+		}
+
+		if (this.did)
+			return this.did;
+
+		this.did = await this._computeDid(did_method, type);
+
+		return this.did;
+	}
+
+	async computeKid() {
+		let did = await this.getDid();
+
+		let did_method = Did.getDidMethod(did);
+		let did_type = this.did_type;
+
+		let keySet = await this._getKeySet();
 
 		const jose = require('jose');
-
-		const did = await this.getDid(alg, did_method, type);
 
 		switch(did_method) {
 			case 'ethr': {
@@ -156,6 +173,13 @@ class Did {
 			default:
 				return Promise.reject('did method not supported: ' + did_method);
 		}
+	}
+
+	async getKid(alg, did_method, type) {
+		if (alg)
+		console.log('OBSOLETE: should not use getKid with arguments, use computeKid or Did.buildKidFromKeySet instead');
+
+		return this.computeKid();
 	}
 
 	async _createJWT(header, body, alg) {
@@ -202,8 +226,12 @@ class Did {
 		return cryptokeys.getJwkKeyAlg(publicJwk);
 	}
 
-	async _getKeySet(alg) {
+	async _getKeySet() {
+		if (this.keySet)
+			return this.keySet;
+		
 		let keyuuid = this.keyuuid;
+		let alg = this.alg;
 
 		if (!keyuuid) {
 			if (this.keySet)
@@ -220,7 +248,7 @@ class Did {
 		var session = this.session;
 		var global = session.getGlobalObject();
 
-		let keySet = await this._getKeySet(alg);
+		let keySet = await this._getKeySet();
 		let agent = {};
 
 		switch (did_method) {
@@ -247,7 +275,7 @@ class Did {
 		var session = this.session;
 		var global = session.getGlobalObject();
 
-		let keySet = await this._getKeySet(alg);
+		let keySet = await this._getKeySet();
 		let agent = {};
 
 		switch (did_method) {
@@ -455,7 +483,7 @@ class Did {
 
 		header.typ = 'jwt';
 
-		let keySet = await this._getKeySet(alg);
+		let keySet = await this._getKeySet();
 		let jwkPubKey = keySet.jwkKeyPair.publicKey;
 
 		header.alg = this._getJwkKeyAlg(jwkPubKey);
@@ -508,7 +536,7 @@ class Did {
 		const agent = await this.getNaturalPersonAgent(alg, (options.did_method ? options.did_method : 'ebsi'));
 		const kid = agent.kid;
 		
-		let keySet = await this._getKeySet(alg);
+		let keySet = await this._getKeySet();
 
 		// cross
 		let rest_connection_verify_cross = this._createRestConnection(rest_url);
@@ -545,7 +573,7 @@ class Did {
 		let submission_id = uuidv4();
 
 		const vc = (await this._decodeJWT(vcJwt)).payload.vc;
-		let keySet = await this._getKeySet(alg);
+		let keySet = await this._getKeySet();
 
 		const agent = await this.getPersonAgent(alg, 
 												(options && options.did_method ? options.did_method : 'ebsi'),
@@ -682,16 +710,145 @@ class Did {
 	}
 
 	// static
-	static getObject(session, keyuuid) {
-		return new Did(session, keyuuid);
+	static getObject(session, keyuuid, alg, did, did_type) {
+		if (!keyuuid)
+		throw new Error('must provide keyuuid');
+
+		if (!alg)
+		throw new Error('must provide alg')
+
+		let didobj =  new Did(session, keyuuid, alg);
+
+		if (did) {
+			if (!did_type)
+				return Promise.reject('must provide did_type');
+
+			didobj.setDid(did);
+			didobj.did_type = did_type;
+		}
+
+		return didobj;
 	}
 
-	static getObjectFromKeySet(session, keySet) {
-		let did = new Did(session);
+	static getObjectFromKeySet(session, keySet, did, type) {
+		if (!keySet)
+		throw new Error('must provide keySet');
 
-		did.keySet = keySet;
+		let didobj = new Did(session);
 
-		return did;
+		didobj.keySet = keySet;
+
+		if (did) {
+			let did_method = Did.getDidMethod(did);
+
+			if ((did_method == 'ebsi') && !type)
+				return Promise.reject('ebsi dids must provide did_type');
+
+			didobj.setDid(did);
+			didobj.did_type = (type ? type : 'n.a.');
+		}
+		else {
+			throw new Error('must provide did and type');
+		}
+
+		return didobj;
+	}
+
+	static async buildObjectFromKeyUUID(session, keyuuid, alg, method, type) {
+		if (!keyuuid || !alg)
+		throw new Error('must provide keyuuid and alg');
+
+		// TODO: streamline the build operation with a buildDidFromKeyUUID
+		let didobj = new Did(session, keyuuid, alg);
+
+		let keySet = await didobj._getKeySet();
+
+		didobj.keySet = keySet;
+
+		let did = await Did.buildDidFromKeySet(session, keySet, method, type);
+
+		didobj.setDid(did);
+		didobj.did_type = (type ? type : 'n.a.');
+
+		return didobj;
+	}
+
+
+
+	static async buildObjectFromKeySet(session, keySet, did, type) {
+		if (!keySet)
+		throw new Error('must provide keySet');
+
+		let didobj = new Did(session);
+
+		didobj.keySet = keySet;
+
+		if (did) {
+			let did_method = Did.getDidMethod(did);
+
+			if ((did_method == 'ebsi') && !type)
+				return Promise.reject('ebsi dids must provide did_type');
+
+			didobj.setDid(did);
+			didobj.did_type = (type ? type : 'n.a.');
+		}
+		else {
+			didobj.did_type = 'natural';
+			let _did = await Did.buildDidFromKeySet(session, keySet, 'key', type);
+			didobj.setDid(_did);
+		}
+
+		return didobj;
+	}
+
+	static async buildDidFromKeySet(session, keySet, did_method, type) {
+		var global = session.getGlobalObject();
+
+		switch(did_method) {
+			case 'ethr': {
+				let aes_pub_keys = await keySet.getAesPublicKeys();
+				let _ethr_did = 'did:ethr:' + aes_pub_keys.address;
+		
+				return _ethr_did;
+			}
+
+			case 'ebsi': {
+				const EBSIServer = global.getModuleClass('crypto-did', 'EBSIServer');
+				let ebsi_server = EBSIServer.getObject(session);
+		
+				let _ebsi_did = await ebsi_server.createDid(keySet, 'ebsi', type);		
+				return _ebsi_did;
+			}
+
+			case 'key': {
+				const EBSIServer = global.getModuleClass('crypto-did', 'EBSIServer');
+				let ebsi_server = EBSIServer.getObject(session);
+		
+				let _key_did = await ebsi_server.createDid(keySet, 'key', type);		
+				return _key_did;
+			}
+
+			default:
+				return Promise.reject('did method not supported: ' + did_method);
+		}
+
+	}
+
+	static getDidMethod(did) {
+		var parts = did.split(':');
+
+		return parts[1];
+	}
+
+
+	static async buildKidFromKeySet(session, keySet, did_method, type) {
+		const jose = require('jose');
+
+		const did = await Did.buildDidFromKeySet(session, keySet, did_method, type);
+
+		let did_obj = await Did.getObjectFromKeySet(session, keySet, did, type);
+
+		return did_obj.computeKid();
 	}
 }
 
