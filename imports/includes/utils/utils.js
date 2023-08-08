@@ -106,6 +106,12 @@ class Utils {
 
 		return b58_str;
 	}
+
+	static async sleep(ms) {
+		return new Promise(resolve => setTimeout(resolve, ms));
+	}
+
+
 }
 
 

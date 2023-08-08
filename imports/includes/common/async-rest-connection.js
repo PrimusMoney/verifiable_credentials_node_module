@@ -88,43 +88,170 @@ class AsyncRestConnection {
 		return this.rest_connection.header;
 	}
 
-	async rest_get(resource, postdata) {
-		if (!postdata) {
-			return new Promise((resolve, reject) => { 
-				this.rest_connection.rest_get(resource, (err, res) => {
-					if (err) reject(err); else resolve(res);
-				});
-			});
-		}
-		else {
-			var self = this.rest_connection;
-		
-			return new Promise((resolve, reject) => { 
-				var xhttp = self._createXMLHttpRequest("GET", resource);
+	_isInBrowser() {
+		var session = this.session;
+		var global = session.getGlobalObject();
+
+		return global.isInBrowser();
+	}
+
+	_getHttpsClass() {
+		//let https = require('https'); // for nodejs
+		let https = require('https-browserify'); // for browser
+		return https;
+	}
+
+	async rest_get_302(resource) {
+ 		return new Promise((resolve, reject) => { 
+			let https = this._getHttpsClass();
+			let rest_call_url = this.rest_connection.getRestCallUrl();
+			let resource_url = rest_call_url + resource;
+
+			let hostname = this.rest_connection.rest_server_url.substring(8);
+			let path = this.rest_connection.rest_server_api_path + resource;
+	
+			var options = {
+				hostname,
+				port: 443,
+				path,
+				method: 'GET',
+				headers: {
+					'Access-Control-Allow-Origin': '*'
+				}
+			};
+
+			var req = https.request(options, (res) => {
+				if (res.statusCode > 300 && res.statusCode < 400 && res.headers.location) {
+					// Detect a redirect
+					let location = res.headers.location;
+					const URL = require("url");
+					let parsedUrl = URL.parse(location, true);
+					let {query} = parsedUrl;
+
+					resolve(query);
+					
+				} else {
+					if (this._isInBrowser() == true) {
+						// when we face a site with CORS restriction and
+						// because we can not catch a 302 before 
+						// "TypeError: Failed to fetch at ClientRequest._onFinish"
+						// error, we redirect to the /.well-known/openid-configuration endpoint
+						// to avoid a 404 and parse the query that we sent
+						let requestUrl = res.url;
+						const URL = require("url");
+						let parsedUrl = URL.parse(requestUrl, true);
+						let {query} = parsedUrl;
+	
+						resolve(query);
+	
+					}
+					else{
+						// Otherwise no redirect; capture the response as normal            
+						let data = '';
 				
-				xhttp.send(postdata);
-				
-				xhttp.onload = function(e) {
-					if (xhttp.status == 200) {
-						self._processResponseText(xhttp, (err, res) => {
-							if (err) reject(err); else resolve(res);
+						res.on('data', function (chunk) {
+							data += chunk;
+						}).on('end', function () {
+							resolve(data);
 						});
 					}
-					else {
-						let err = (xhttp.statusText && xhttp.statusText.length ? xhttp.statusText : xhttp.responseText);
-						reject(err);	
-					}
+				}
+			});
+
+			req.on('error', (e) => {
+				reject(e);
+			});
+
+			req.end();
+		});
+	}
+
+	async rest_post_302(resource, postdata) {
+ 		return new Promise((resolve, reject) => { 
+			let https = this._getHttpsClass();
+			let rest_call_url = this.rest_connection.getRestCallUrl();
+			let resource_url = rest_call_url + resource;
+
+			let hostname = this.rest_connection.rest_server_url.substring(8);
+			let path = this.rest_connection.rest_server_api_path + resource;
+	
+			var options = {
+				hostname,
+				port: 443,
+				path,
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded',
+					'Content-Length': postdata.length
+				}
+			};
+			  
+			var req = https.request(options, (res) => {
+
+				if (res.statusCode > 300 && res.statusCode < 400 && res.headers.location) {
+					// Detect a redirect
+					let location = res.headers.location;
+					const URL = require("url");
+					let parsedUrl = URL.parse(location, true);
+					let {query} = parsedUrl;
+
+					resolve(query);
 					
-				};
+				} else {
+					res.on('data', (d) => {
+						resolve(d);
+					});
+				}
+			});
 				
-				xhttp.onerror = function (e) {
+			req.on('error', (e) => {
+				reject(e);
+			});
+
+			
+			req.write(postdata);
+			req.end();
+		});
+	}
+
+
+	async rest_get(resource, postdata) {
+		var self = this.rest_connection;
+		
+		return new Promise((resolve, reject) => { 
+			var xhttp = self._createXMLHttpRequest("GET", resource);
+			
+			if (postdata)
+			xhttp.send(postdata);
+			else
+			xhttp.send();
+			
+			xhttp.onreadystatechange = () => {
+				if (xhttp.status == 302) { 
+					debugger;
+				  }
+			};
+	
+			xhttp.onload = function(e) {
+				if ((xhttp.status == 200) ||  (xhttp.status == 201)) {
+					self._processResponseText(xhttp, (err, res) => {
+						if (err) reject(err); else resolve(res);
+					});
+				}
+				else {
 					let err = (xhttp.statusText && xhttp.statusText.length ? xhttp.statusText : xhttp.responseText);
-					console.log('rest error is ' + err);
-					
 					reject(err);	
-				};
-			});			
-		}		
+				}
+				
+			};
+			
+			xhttp.onerror = function (e) {
+				let err = (xhttp.statusText && xhttp.statusText.length ? xhttp.statusText : xhttp.responseText);
+				console.log('rest error is ' + err);
+				
+				reject(err);	
+			};
+		});			
 	}
 
 	async rest_post(resource, postdata) {

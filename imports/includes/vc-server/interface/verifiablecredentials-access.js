@@ -88,7 +88,7 @@ var VerifiableCredentialsServerAccess = class {
 	}
 	
 	//
-	// VerifiableCredentails Server API
+	// VerifiableCredentials Server API
 	//
 	
 
@@ -185,12 +185,15 @@ var VerifiableCredentialsServerAccess = class {
 		}
 	}
 
-	// vc
-	async verifiedcredential_verifiedpresentation_verify(audience, idtoken, vptoken, options) {
-		// POST
-		var resource = "/verifiedcredential/vp/verify";
+	//
+	// vc api
 
-		var postdata = {audience, idtoken, vptoken, options};
+	// credentials
+	async credential_fetch(options) {
+		// POST
+		var resource = "/credential/fetch";
+
+		var postdata = {options};
 
 		var res = await this.rest_post(resource, postdata);
 
@@ -200,9 +203,47 @@ var VerifiableCredentialsServerAccess = class {
 			if (res['error'])
 				throw('rest error calling ' + resource + (res['error'] ? ': ' + res['error'] : ''));
 			else
-				return res['verification'];
+				return res['credential'];
 		}
 	}
+
+	async credential_restcall(resturl, method, resource, data) {
+		// POST
+		var _resource = "/credential/restcall";
+
+		var postdata = {resturl, method, resource, data};
+
+		var res = await this.rest_post(_resource, postdata);
+
+		if (!res)
+			throw('rest error calling ' + _resource );
+		else {
+/* 			if (res['error'])
+				throw('rest error calling ' + _resource + (res['error'] ? ': ' + res['error'] : ''));
+			else */
+				return res;
+		}
+	}
+
+	async credential_code_challenge(code_verifier) {
+		// POST
+		var resource = "/credential/codechallenge";
+
+		var postdata = {code_verifier};
+
+		var res = await this.rest_post(resource, postdata);
+
+		if (!res)
+			throw('rest error calling ' + resource );
+		else {
+			if (res['error'])
+				throw('rest error calling ' + resource + (res['error'] ? ': ' + res['error'] : ''));
+			else
+				return res['code_challenge'];
+		}
+	}
+
+
 
 	// issuer
 	async issuer_datasource_add(client_id, client_key, name, endpoint, credential_type, nonce) {

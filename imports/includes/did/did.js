@@ -165,7 +165,9 @@ class Did {
 			}
 
 			case 'key': {
-				const kid = `${did}#owner1`;
+				//const kid = `${did}#owner1`;
+				let parts = did.split(':')
+				const kid = did + '#' + parts[2];
 		
 				return kid;
 			}
@@ -325,243 +327,6 @@ class Did {
 		return rest_connection;				
 	}
 
-	// calling 3rd party
-	async fetchInitiationUrl(options) {
-		let rest_url = options.rest_url;
-
-		let params = options;
-
-		let test = {};
-		let resource;
-
-		switch (options.method) {
-			case 'initiate_issuance': {
-				let rest_connection_initiate_issuance = this._createRestConnection(rest_url);
-
-				// TODO: we can use params.flow_type to distinguish between EBSI's v2 and v3 conformance
-
-				rest_connection_initiate_issuance.addToHeader({key: 'conformance', value: params.conformance});
-		
-				// cross
-				resource = '/issuer-mock/initiate';
-				resource += '?conformance=' + params.conformance;
-				resource += '&credential_type=' + (params.credential_type ? params.credential_type : 'verifiable-id');
-				resource += '&flow_type=' + (params.flow_type == 'same-device' ? 'same-device' : 'cross-device');
-		
-				test.initiate_issuance = await rest_connection_initiate_issuance.rest_get(resource);
-
-				return (test.initiate_issuance ? test.initiate_issuance : null);
-			}
-			break;
-
-			case 'initiate_verification': {
-				let rest_connection_initiate_verification = this._createRestConnection(rest_url);
-
-				// TODO: we can use params.flow_type to distinguish between EBSI's v2 and v3 conformance
-
-				rest_connection_initiate_verification.addToHeader({key: 'conformance', value: params.conformance});
-				
-				// cross
-				resource = '/authentication-requests';
-				resource += '?conformance=' + params.conformance;
-				resource += '&flow_type=' + (params.flow_type == 'same-device' ? 'same-device' : 'cross-device');
-				resource += '&scheme=openid';
-		
-				test.initiate_verification = await rest_connection_initiate_verification.rest_get(resource);
-			
-				return (test.initiate_verification ? test.initiate_verification : null);
-			}
-			break;
-
-			default:
-				break;
-		}
-	}
-
-
-	async fetchVerifiableCredential(options) {
-		var session = this.session;
-		var global = session.getGlobalObject();
-		const Utils = global.getModuleClass('crypto-did', 'Utils');
-
-		const alg = (options.alg ? options.alg : 'ES256');
-
-		let rest_url = options.rest_url;
-
-		let test = {};
-
-		let resource;
-		let postdata;
-		let plain_str;
-		let enc_str;
-
-		let params = options;
-
-		const sessionuuid = this.session.getSessionUUID();
-
-		//
-		// test health
-		let rest_connection_health = this._createRestConnection(rest_url);
-
-		resource = '/health';
-		test.health = await rest_connection_health.rest_get(resource);
-
-
-
-		//
-		// authorize
-		let rest_connection_authorize = this._createRestConnection(rest_url);
-
-		resource = '/issuer-mock/authorize';
-		resource += '?scope=openid';
-		resource += '&response_type=code';
-		resource += '&state='+ sessionuuid;
-
-		plain_str = 'https://oauth2.primusmoney.com/erc20-dapp/api/oauth2';
-		enc_str = encodeURIComponent(plain_str);
-		resource += '&redirect_uri=' + enc_str;
-
-		plain_str = 'https://oauth2.primusmoney.com/erc20-dapp/api/oauth2&sessionuuid='+ sessionuuid;
-		enc_str = encodeURIComponent(plain_str);
-		resource += '&client_id=' + enc_str;
-
-		plain_str = JSON.stringify([{credential_type:params.credential_type,format: 'jwt_vc',locations:null,type: 'openid_credential'}]);
-		enc_str = encodeURIComponent(plain_str);
-		resource += '&authorization_details=' + enc_str;
-
-		resource += '&conformance=' + params.conformance;
-		//postdata = {conformance: params.conformance}; // passsing conformance in body to appear in EBSI's logs
-
-
-		test.authorize = await rest_connection_authorize.rest_get(resource);
-
-		if (!test.authorize.code)
-			return Promise.reject('could not retrieve authorization code');
-
-		//
-		// token
-		let rest_connection_token = this._createRestConnection(rest_url);
-		
-		rest_connection_token.addToHeader({key: 'conformance', value: params.conformance});
-
-		resource = '/issuer-mock/token';
-
-		rest_connection_token.content_type = 'application/x-www-form-urlencoded';
-		plain_str = 'https://oauth2.primusmoney.com/erc20-dapp/api/oauth2';
-		enc_str = encodeURIComponent(plain_str);
-
-		postdata = 'grant_type=authorization_code';
-		postdata += '&code=' + test.authorize.code;
-		postdata += '&redirect_uri=' + enc_str;
-
-		test.token = await rest_connection_token.rest_post(resource, postdata);
-
-		if (!test.token.access_token)
-			return Promise.reject('could not retrieve access token');
-
-
-		//
-		// credential
-		let rest_connection_credential = this._createRestConnection(rest_url);
-
-		rest_connection_credential.addToHeader({key: 'Authorization', value: test.token.token_type + ' ' + test.token.access_token});
-
-		rest_connection_credential.addToHeader({key: 'conformance', value: params.conformance});
-
- 		resource = '/issuer-mock/credential';
-
-		postdata = {};
-		postdata.format = 'jwt_vc';
-		postdata.type = params.credential_type;
-		//postdata.access_token = test.token.access_token;
-		postdata.c_nonce = test.token.c_nonce;
-		postdata.c_nonce_expires_in = test.token.expires_in;
-		//postdata.id_token = test.token.id_token;
-
-		// building jwt
-		let header = {};
-
-		header.typ = 'jwt';
-
-		let keySet = await this._getKeySet();
-		let jwkPubKey = keySet.jwkKeyPair.publicKey;
-
-		header.alg = this._getJwkKeyAlg(jwkPubKey);
-		header.jwk = {crv: jwkPubKey.crv, kty: jwkPubKey.kty, x: jwkPubKey.x, y: jwkPubKey.y};
-
-		const agent = await this.getNaturalPersonAgent(alg, (options.did_method ? options.did_method : 'ebsi'));
-		const kid = agent.kid;
-
-		header.kid = kid;
-
-		let body = {};
-
-		body.iss = header.kid;
-		body.aud = params.issuer;
-		body.nonce = test.token.c_nonce;
-		body.iat = this._getTimeStamp();
-
-		//let jwt = await this._createJWT(header, body, header.alg);
-		let jwt = await this.createDidJWT(header, body, alg, (options.did_method ? options.did_method : 'ebsi'))
-		.catch(err => {
-			console.log(err)
-		});
-
-
-		postdata.proof = {};
-		postdata.proof.proof_type = 'jwt';
-		postdata.proof.jwt = jwt;
-
-		//postdata.credential = jwt;
-
-		//test.credential = await rest_connection_credential.rest_post(resource, JSON.stringify(postdata));
-		test.credential = await rest_connection_credential.rest_post(resource, postdata);
-
-		return (test.credential && test.credential.credential ? test.credential.credential : null);
-	}
-
-	async fetchVerifiabledPresentationVerification(audience, idtoken, vptoken, options) {
-		var params = options;
-
-		const alg = (options.alg ? options.alg : 'ES256');
-
-		let rest_url = options.rest_url;
-
-
-		let test = {};
-
-		let resource;
-		let postdata;
-
-		const agent = await this.getNaturalPersonAgent(alg, (options.did_method ? options.did_method : 'ebsi'));
-		const kid = agent.kid;
-		
-		let keySet = await this._getKeySet();
-
-		// cross
-		let rest_connection_verify_cross = this._createRestConnection(rest_url);
-
-		rest_connection_verify_cross.addToHeader({key: 'conformance', value: params.conformance});
-		
-		// '/authentication_responses'
-		resource = '';
-		resource += '?conformance=' + params.conformance;
-		resource += '&flow_type=cross-device';
-		resource += '&scheme=openid';
-
-		rest_connection_verify_cross.content_type = 'application/x-www-form-urlencoded';
-
-		postdata = {};
-
-		postdata = 'id_token=' + idtoken;
-		postdata += '&vp_token=' + vptoken;
-
-
-		test.verify_cross_device = await rest_connection_verify_cross.rest_post(resource, postdata);
-
-
-		return test.verify_cross_device;
-	}
 
 	// verifiable presentations
 	async createVerifiablePresentationJWT(aud, vcJwt, alg, options) {
@@ -653,69 +418,21 @@ class Did {
 
 		return {id_token, vp_token};
 	}
-
-	async verifyVerifiablePresentationJWT(audience, idtoken, vptoken, options) {
-		var verification = {result: false, validations: {}};
-
-		try {
-
-			if (!options)
-				options = {};
-
-			if (!options.ebsiAuthority)
-				options.ebsiAuthority = "api-conformance.ebsi.eu"; // for tests on conformance deployment
-
-			// checks
-			if (!vptoken)
-				return verification; // avoids "Uncaught ValidationError: Unable to decode JWT VC" in this._decodeJWT
-
-			const vp_obj = await this._decodeJWT(vptoken);
-
-			verification.validations.vpFormat = {status: true};
-
-			// check presentation
-			let _audience = (audience ? audience : (vp_obj && vp_obj.payload ? vp_obj.payload.aud : null));
-
-
-			// check credential
-			const vc_token = vp_obj.payload.verifiableCredential;
-
-			const vc_obj = await this._decodeJWT(vc_token);
-
-			if (vc_obj) {
-				verification.result = true;
-
-				verification.validations.presentation = {status: true};
-
-				verification.validations.credential = {status: true};
 	
-			}
-			else {
-				verification.result = false;
+	// static
+	static createBlankObject(session) {
+		let didobj =  new Did(session, null, 'ES256');
 
-				verification.validations.presentation = {status: false, error: 'VP jwt validation failed',	details: 'unkown'};
-				verification.validations.credential = {status: false};
-			}
-		}
-		catch(e) {
-			console.log('exception in verifyVerifiablePresentationJWT: ' + e);
-
-			let error = (e ? (e.message ? e.message : e) : 'unknown');
-			verification.validations.presentation = {status: false, error};
-			verification.validations.credential = {status: false};
-		}
-
-
-		return verification;
+		return didobj;
 	}
 
-	// static
 	static getObject(session, keyuuid, alg, did, did_type) {
 		if (!keyuuid)
-		throw new Error('must provide keyuuid');
+		throw new Error('must provide keyuuid, use createBlankObject if necessary');
 
-		if (!alg)
-		throw new Error('must provide alg')
+		if (!alg)		
+		throw new Error('must provide alg');
+
 
 		let didobj =  new Did(session, keyuuid, alg);
 
@@ -849,6 +566,77 @@ class Did {
 		let did_obj = await Did.getObjectFromKeySet(session, keySet, did, type);
 
 		return did_obj.computeKid();
+	}
+
+	static async build_id_token(session, keySet, did, type, aud, nonce) {
+		var global = session.getGlobalObject();
+		const JWT = global.getModuleClass('crypto-did', 'JWT');
+
+		let did_obj = await Did.getObjectFromKeySet(session, keySet, did, type);
+		let kid = await did_obj.getKid();
+
+		let header = {
+			typ: 'JWT'
+		};
+
+		//header.alg = keySet.alg;
+		header.alg = 'ES256';
+		// 2023.05.26 EBSI only accepts id_token signed with ES256
+		header.kid = kid;
+
+
+		let payload = {};
+
+		payload.iss = did;
+		payload.sub = did;
+		payload.aud = aud;
+		payload.iat = did_obj._getTimeStamp();
+		payload.exp = payload.iat + 3600;
+		payload.nonce = nonce;
+
+		const jwt = JWT.getObject(session, header, payload);
+
+		return jwt._createJWTFromKeySet(keySet);
+	}
+
+	static async build_vp_token(session, iss_keySet, iss_did, type, aud, nonce, presentation_definition, client_id, redirect_uri) {
+		var global = session.getGlobalObject();
+		const JWT = global.getModuleClass('crypto-did', 'JWT');
+
+		let did_obj = await Did.getObjectFromKeySet(session, iss_keySet, iss_did, type);
+		let kid = await did_obj.getKid();
+
+		let header = {
+			typ: 'JWT'
+		};
+
+		//header.alg = iss_keySet.alg;
+		header.alg = 'ES256';
+		// 2023.05.26 EBSI only accepts vp_token signed with ES256
+		header.kid = kid;
+
+
+		let payload = {};
+
+		payload.iss = iss_did;
+		payload.sub = iss_did;
+		payload.aud = aud;
+		payload.iat = did_obj._getTimeStamp();
+		payload.exp = payload.iat + 3600;
+		payload.nonce = nonce;
+
+		payload.response_type = 'vp_token';
+		payload.response_mode = 'direct_post';
+		payload.scope = 'openid';
+
+		payload.presentation_definition = presentation_definition;
+
+		payload.client_id = client_id;
+		payload.redirect_uri = redirect_uri;
+
+		const jwt = JWT.getObject(session, header, payload);
+
+		return jwt._createJWTFromKeySet(iss_keySet);
 	}
 }
 

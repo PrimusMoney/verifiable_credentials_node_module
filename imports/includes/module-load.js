@@ -7,6 +7,9 @@ import './common/async-rest-connection.js';
 import './utils/utils.js';
 
 
+// credentials
+import './credentials/fetcher.js';
+
 // cryptokey block (enclave like)
 import './cryptokey-block/interface/cryptokey-block-access.js';
 import './cryptokey-block/interface/xtra-cryptokey-block-access.js';

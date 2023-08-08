@@ -328,8 +328,8 @@ var Module = class {
 		const Did = global.getModuleClass('crypto-did', 'Did');
 
 		try {
-			const k1did_obj = Did.getObject(session, keyuuid);
-			const r1did_obj = Did.getObject(session, keyuuid);
+			const k1did_obj = Did.getObject(session, keyuuid, 'ES256K');
+			const r1did_obj = Did.getObject(session, keyuuid, 'ES256');
 
 			// create did and kid
 			let k1Agent = await k1did_obj.getNaturalPersonAgent('ES256K', 'ebsi').catch(err => {}); // problem CryptoKey with secp256k1 on browser
@@ -618,46 +618,54 @@ var Module = class {
 	//
 	async fetchInitiationUrl(session, options) {
 		var global = this.global;
-		const Did = global.getModuleClass('crypto-did', 'Did');
-		const did = Did.getObject(session, null);
 
 		if (!options.conformance)
 		options.conformance = session.getSessionUUID();
 
-		return did.fetchInitiationUrl(options);
+		const Fetcher = global.getModuleClass('crypto-did', 'Fetcher');
+		const fetcher = Fetcher.getObject(session)
+
+		return fetcher.fetchInitiationUrl(options);
 	}
 
-	fetchVerifiableCredential(session, keyuuid, options) {
+	async fetchVerifiableCredential(session, keyuuid, options) {
 		var global = this.global;
 		const Did = global.getModuleClass('crypto-did', 'Did');
-		const did = Did.getObject(session, keyuuid);
+		const did = await Did.buildObjectFromKeyUUID(session, keyuuid, options.alg, options.method, options.type);
 
-		return did.fetchVerifiableCredential(options);
+		options.did_obj = did;
+
+		const Fetcher = global.getModuleClass('crypto-did', 'Fetcher');
+		const fetcher = Fetcher.getObject(session)
+
+		return fetcher.fetchVerifiableCredential(options);
 	}
 
 	async fetchVerifiabledPresentationVerification(session, audience, idtoken, vptoken, options) {
 		var global = this.global;
-		const Did = global.getModuleClass('crypto-did', 'Did');
-		const did = Did.getObject(session, null);
 
-		return did.fetchVerifiabledPresentationVerification(audience, idtoken, vptoken, options);
+		const Fetcher = global.getModuleClass('crypto-did', 'Fetcher');
+		const fetcher = Fetcher.getObject(session)
+
+		return fetcher.fetchVerifiabledPresentationVerification(audience, idtoken, vptoken, options);
 	}
 
-	createVerifiablePresentationJWT(session, audience, vcJwt, keyuuid, alg, options) {
+	async createVerifiablePresentationJWT(session, audience, vcJwt, keyuuid, alg, options) {
 		var global = this.global;
 		const Did = global.getModuleClass('crypto-did', 'Did');
-		const did = Did.getObject(session, keyuuid);
+		const did = Did.getObject(session, keyuuid, alg);
 
 		return did.createVerifiablePresentationJWT(audience, vcJwt, alg, options)
 	}
 
 
-	verifyVerifiablePresentationJWT(session, audience, idtoken, vptoken, options) {
+	async verifyVerifiablePresentationJWT(session, audience, idtoken, vptoken, options) {
 		var global = this.global;
-		const Did = global.getModuleClass('crypto-did', 'Did');
-		const did = Did.getObject(session, null);
 
-		return did.verifyVerifiablePresentationJWT(audience, idtoken, vptoken, options);
+		const Fetcher = global.getModuleClass('crypto-did', 'Fetcher');
+		const fetcher = Fetcher.getObject(session)
+
+		return fetcher.verifyVerifiablePresentationJWT(audience, idtoken, vptoken, options);
 	}
 
 }

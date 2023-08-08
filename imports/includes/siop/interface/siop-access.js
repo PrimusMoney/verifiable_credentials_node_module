@@ -129,7 +129,7 @@ class SiopServerAccess {
 		var global = session.getGlobalObject();
 
 		const Did = global.getModuleClass('crypto-did', 'Did');
-		const did = Did.getObject(session, keyuuid);
+		const did = Did.getObject(session, keyuuid, alg);
 		
 		var kid = await did.getKid(alg, 'key', 'natural');
 
@@ -141,7 +141,7 @@ class SiopServerAccess {
 		var global = session.getGlobalObject();
 
 		const Did = global.getModuleClass('crypto-did', 'Did');
-		const did = Did.getObject(session, keyuuid);
+		const did = Did.getObject(session, keyuuid, alg);
 		
 		var kid = await did.getKid(alg, 'ebsi', 'natural');
 

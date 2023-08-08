@@ -3,27 +3,37 @@ class EBSIServer {
 		this.session = session;
 		this.type = (type ? type : 'conformance');
 
+		this.ebsiAuthority = "api.ebsi.eu";
+
+
 		switch(type) {
 			case 'conformance': {
 				this.rest_url = 'https://api-conformance.ebsi.eu';
 				this.versions = (versions ? versions : 
 					{ authorisation: 'v3', did_registry: 'v4', time_stamps: 'v3',
-					trusted_issuers_registry: 'v4', trusted_policies_registry: 'v2', trusted_schemas_registry: 'v2'});
-			}
+					trusted_issuers_registry: 'v4', trusted_policies_registry: 'v2', trusted_schemas_registry: 'v2',
+					root: 'v3', ledger: 'v3'});
+
+					this.ebsiAuthority = "api-conformance.ebsi.eu"
+				}
 			break;
 
 			case 'pilot': {
 				this.rest_url = 'https://api-pilot.ebsi.eu';
 				this.versions = (versions ? versions : 
 					{ authorisation: 'v3', did_registry: 'v4', time_stamps: 'v3',
-					trusted_issuers_registry: 'v4', trusted_policies_registry: 'v2', trusted_schemas_registry: 'v2'});
-			}
+					trusted_issuers_registry: 'v4', trusted_policies_registry: 'v2', trusted_schemas_registry: 'v2',
+					root: 'v3', ledger: 'v3'});
+
+					this.ebsiAuthority = "api-pilot.ebsi.eu"
+				}
 			break;
 	
 			default:
 			case 'production': {
 				this.rest_url = 'https://api.ebsi.eu';
-
+				
+				this.ebsiAuthority = "api.ebsi.eu";
 			}
 			break;
 		}
@@ -268,9 +278,91 @@ class EBSIServer {
 
 		return verification;
 	}
+
+	async createVerifiableCredentialJwt(payload, issuer, options) {
+		let vcJwt;
+
+		try {
+			const EbsiVerifiableCredential = await import('@cef-ebsi/verifiable-credential');
+			const { createVerifiableCredentialJwt } = EbsiVerifiableCredential;
+
+			const _options = {
+				ebsiAuthority: this.ebsiAuthority,
+				skipValidation: (options && options.skipValidation ? options.skipValidation : true),
+			};
+
+			vcJwt = await createVerifiableCredentialJwt(payload, issuer, options)
+		}
+		catch(e) {
+			console.log('exception in createVerifiableCredentialJwt: ' + e);
+		}
+
+		return vcJwt;
+	}
+
+	async verifyVerifiableCredentialJWT(vc_jwt, options) {
+		var verification = {result: false, validations: {}};
+
+		try {
+			const EbsiVerifiableCredential = await import('@cef-ebsi/verifiable-credential');
+			const { verifyCredentialJwt } = EbsiVerifiableCredential;
+
+			let ebsiRegistriesUrl = this.getRegistriesUrl()
+
+			let ebsiAuthority = this.ebsiAuthority;
+			let didRegistry = ebsiRegistriesUrl.didRegistry;
+			let trustedIssuersRegistry = ebsiRegistriesUrl.trustedIssuersRegistry;
+			let trustedPoliciesRegistry = ebsiRegistriesUrl.trustedPoliciesRegistry;
+
+			const _options = {
+				ebsiAuthority,
+				ebsiEnvConfig: {
+				  didRegistry,
+				  trustedIssuersRegistry,
+				  trustedPoliciesRegistry,
+				},
+			  };
+			  verification.vcPayload = await verifyCredentialJwt(vc_jwt, _options);
+
+			  verification.result = true;
+			  verification.validations.credential = {status: true};
+		}
+		catch(e) {
+			console.log('exception in verifyVerifiableCredentialJWT: ' + e);
+
+			let error = (e ? (e.message ? e.message : e) : 'unknown');
+			verification.validations.credential = {status: false, error};
+
+		}
+
+		return verification;
+	}
 	
 	//
 	// rest api (specific for Conformance)
+
+	//
+	// 
+	async server_health() {
+		var version = this.versions.root;
+		var resource;
+
+		switch(this.ebsi_env) {
+			case 'conformance':
+				resource = '/conformance';
+				break;
+			default:
+				return Promise.reject('health not available');
+		}
+
+		resource += '/' + version + '/health';
+
+		var res = await this.rest_get(resource);
+
+		// TODO: use XMLHttpRequest to retrieve ebsi-image-tag in the response headers
+
+		return res;
+	}
 
 	//
 	// authorisation
@@ -442,7 +534,7 @@ class EBSIServer {
 
 
 	//
-	// authorisation
+	// trusted issuers registry
 	async trusted_issuers_registry_issuers(pageafter, pagesize) {
 		var type = this.type;
 		var version = this.versions.trusted_issuers_registry;
@@ -466,6 +558,69 @@ class EBSIServer {
 		var resource = "/trusted-issuers-registry/" + version + "/issuers";
 
 		resource += '/' + did;
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+	// issuer attributes
+	async trusted_issuers_registry_attributes(did, pageafter, pagesize) {
+		var version = this.versions.trusted_issuers_registry;
+
+		var resource = "/trusted-issuers-registry/" + version + "/issuers/" + did + '/attributes';
+
+		if (pageafter || pagesize) resource += '?';
+
+		resource += (pageafter ? 'page[after]=' + pageafter : '');
+		resource += (pagesize ? '&page[size]=' + pagesize : '');
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+	async trusted_issuers_registry_attribute(did, attributeId) {
+		var version = this.versions.trusted_issuers_registry;
+
+		var resource = "/trusted-issuers-registry/" + version + "/issuers/" + did + '/attributes/' + attributeId;
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+	async trusted_issuers_registry_attribute_revisions(did, attributeId, pageafter, pagesize) {
+		var version = this.versions.trusted_issuers_registry;
+
+		var resource = "/trusted-issuers-registry/" + version + "/issuers/" + did + '/attributes/' + attributeId + '/revisions';
+
+		if (pageafter || pagesize) resource += '?';
+
+		resource += (pageafter ? 'page[after]=' + pageafter : '');
+		resource += (pagesize ? '&page[size]=' + pagesize : '');
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+
+	// issuer proxies
+	async trusted_issuers_registry_issuers_proxies(did) {
+		var version = this.versions.trusted_issuers_registry;
+
+		var resource = "/trusted-issuers-registry/" + version + "/issuers/" + did + '/proxies';
+
+		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+	async trusted_issuers_registry_issuers_proxy(did, proxyId) {
+		var version = this.versions.trusted_issuers_registry;
+
+		var resource = "/trusted-issuers-registry/" + version + "/issuers/" + did + '/proxies/' + proxyId;
 
 		var res = await this.rest_get(resource);
 
@@ -646,6 +801,33 @@ class EBSIServer {
 		var resource = "/trusted-schemas-registry/" + version + "/policies/" + policyId;
 
 		var res = await this.rest_get(resource);
+
+		return res;
+	}
+
+	//
+	// json rpc through rest api
+
+
+	//
+	// ledger
+	async ledger_jsonrpc(params, headers) {
+		var version = this.versions.ledger;
+
+		var rest_connection = this.cloneRestConnection();
+
+		if (headers && (headers.length > 0)) {
+			for (var i = 0; i < headers.length; i++) {
+				rest_connection.addToHeader(headers[i]);
+			}
+		}
+		
+
+		var resource = "/ledger/" + version + "/blockchains/besu";
+
+		var postdata = Object.assign({}, params);
+
+		var res = await rest_connection.rest_post(resource, postdata);
 
 		return res;
 	}
