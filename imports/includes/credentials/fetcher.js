@@ -35,47 +35,131 @@ class Fetcher {
 		let json = {};
 		let resource;
 
-		switch (options.method) {
-			case 'initiate_issuance': {
-				let rest_connection_initiate_issuance = this._createRestConnection(rest_url);
+		let plain_str;
+		let enc_str;
 
-				// TODO: we can use params.flow_type to distinguish between EBSI's v2 and v3 conformance
-
-				rest_connection_initiate_issuance.addToHeader({key: 'conformance', value: params.conformance});
+		switch(params.workflow_version) {
+			case 'v2': {
+				switch (options.method) {
+					case 'initiate_issuance': {
+						let rest_connection_initiate_issuance = this._createRestConnection(rest_url);
 		
-				// cross
-				resource = '/issuer-mock/initiate';
-				resource += '?conformance=' + params.conformance;
-				resource += '&credential_type=' + (params.credential_type ? params.credential_type : 'verifiable-id');
-				resource += '&flow_type=' + (params.flow_type == 'same-device' ? 'same-device' : 'cross-device');
-		
-				json.initiate_issuance = await rest_connection_initiate_issuance.rest_get(resource);
-
-				return (json.initiate_issuance ? json.initiate_issuance : null);
-			}
-			break;
-
-			case 'initiate_verification': {
-				let rest_connection_initiate_verification = this._createRestConnection(rest_url);
-
-				// TODO: we can use params.flow_type to distinguish between EBSI's v2 and v3 conformance
-
-				rest_connection_initiate_verification.addToHeader({key: 'conformance', value: params.conformance});
+						rest_connection_initiate_issuance.addToHeader({key: 'conformance', value: params.conformance});
 				
-				// cross
-				resource = '/authentication-requests';
-				resource += '?conformance=' + params.conformance;
-				resource += '&flow_type=' + (params.flow_type == 'same-device' ? 'same-device' : 'cross-device');
-				resource += '&scheme=openid';
+						// cross
+						resource = '/issuer-mock/initiate';
+						resource += '?conformance=' + params.conformance;
+						resource += '&credential_type=' + (params.credential_type ? params.credential_type : 'verifiable-id');
+						resource += '&flow_type=' + (params.flow_type == 'same-device' ? 'same-device' : 'cross-device');
+				
+						json.initiate_issuance = await rest_connection_initiate_issuance.rest_get(resource);
 		
-				json.initiate_verification = await rest_connection_initiate_verification.rest_get(resource);
-			
-				return (json.initiate_verification ? json.initiate_verification : null);
+						return (json.initiate_issuance ? json.initiate_issuance : null);
+					}
+					break;
+		
+					case 'initiate_verification': {
+						let rest_connection_initiate_verification = this._createRestConnection(rest_url);
+		
+						rest_connection_initiate_verification.addToHeader({key: 'conformance', value: params.conformance});
+						
+						// cross
+						resource = '/authentication-requests';
+						resource += '?conformance=' + params.conformance;
+						resource += '&flow_type=' + (params.flow_type == 'same-device' ? 'same-device' : 'cross-device');
+						resource += '&scheme=openid';
+				
+						json.initiate_verification = await rest_connection_initiate_verification.rest_get(resource);
+					
+						return (json.initiate_verification ? json.initiate_verification : null);
+					}
+					break;
+		
+					default:
+						break;
+				}
 			}
 			break;
 
+			case 'v3': {
+				//
+				// discovery
+				const openid_credential_issuer_url = rest_url + '/.well-known/openid-credential-issuer';
+				let rest_connection_openid_credential_issuer = this._createRestConnection(openid_credential_issuer_url);
+				let openid_credential_issuer = await rest_connection_openid_credential_issuer.rest_get('');
+
+				const openid_config_url = openid_credential_issuer.authorization_server + '/.well-known/openid-configuration';
+				let rest_connection_openid_config = this._createRestConnection(openid_config_url);
+				let openid_configuration = await rest_connection_openid_config.rest_get('');
+	
+
+				switch (options.method) {
+					case 'initiate_issuance': {
+						if (openid_configuration.multi_tenancy && (openid_configuration.multi_tenancy.activate === true)) {
+							// server implements multi-tenancy, must get the endpoints for the specific client
+							let client_token = (params.client_id ? (params.client_key ? params.client_id + '_' + params.client_key :params.client_id) : null)
+							
+							if (client_token) {
+								// we check if we must use a specific openid_credential_issuer &&  openid_configuration
+								const client_openid_credential_issuer_url = rest_url + '/' + client_token + '/.well-known/openid-credential-issuer';
+								let client_rest_connection_openid_credential_issuer = this._createRestConnection(client_openid_credential_issuer_url);
+								let client_openid_credential_issuer = await client_rest_connection_openid_credential_issuer.rest_get('').catch(err => {});
+				
+								if (client_openid_credential_issuer) {
+									const client_openid_config_url = client_openid_credential_issuer.authorization_server + '/.well-known/openid-configuration';
+									let client_rest_connection_openid_config = this._createRestConnection(client_openid_config_url);
+									let client_openid_configuration = await client_rest_connection_openid_config.rest_get('').catch(err => {});
+	
+									if (client_openid_credential_issuer && client_openid_configuration) {
+										openid_credential_issuer = client_openid_credential_issuer;
+										openid_configuration = client_openid_configuration;
+									}
+								}
+							}
+						}
+
+						let issuer_url = openid_credential_issuer.credential_issuer;
+
+						let rest_connection_initiate_issuance = this._createRestConnection(issuer_url);
+
+						// cross by default
+						resource = '/initiate-credential-offer';
+
+						resource += '?credential_type=' + (params.credential_type ? params.credential_type : 'verifiable-id');
+						resource += '&workflow_version=' + params.workflow_version;
+						resource += '&flow_type=' + (params.flow_type == 'same-device' ? 'same-device' : 'cross-device');
+
+						plain_str = params.client_did;
+						enc_str = (plain_str ? encodeURIComponent(plain_str) : null);
+						resource += (enc_str ? '&client_id=' + enc_str : '');
+
+						plain_str = params.credential_offer_endpoint;
+						enc_str = (plain_str ? encodeURIComponent(plain_str) : null);
+						resource += (enc_str ? '&credential_offer_endpoint=' + enc_str : '');
+		
+				
+						json.initiate_issuance = await rest_connection_initiate_issuance.rest_get(resource);
+		
+						return (json.initiate_issuance ? json.initiate_issuance : null);
+					}
+					break;
+
+					case 'initiate_verification': {
+						let rest_connection_initiate_verification = this._createRestConnection(rest_url);
+				
+					}
+					break;
+		
+					default:
+						break;
+	
+				}
+			}
+			break;
+	
 			default:
-				break;
+				return Promise.reject('no workflow version');
+
 		}
 	}
 
