@@ -92,10 +92,11 @@ class Fetcher {
 				let rest_connection_openid_config = this._createRestConnection(openid_config_url);
 				let openid_configuration = await rest_connection_openid_config.rest_get('');
 	
+				let xtra_configuration = (openid_configuration && openid_configuration.xtra_configuration ? openid_configuration.xtra_configuration : {});
 
 				switch (options.method) {
 					case 'initiate_issuance': {
-						if (openid_configuration.multi_tenancy && (openid_configuration.multi_tenancy.activate === true)) {
+						if (xtra_configuration.multi_tenancy && (xtra_configuration.multi_tenancy.activate === true)) {
 							// server implements multi-tenancy, must get the endpoints for the specific client
 							let client_token = (params.client_id ? (params.client_key ? params.client_id + '_' + params.client_key :params.client_id) : null)
 							
@@ -126,7 +127,6 @@ class Fetcher {
 						resource = '/initiate-credential-offer';
 
 						resource += '?credential_type=' + (params.credential_type ? params.credential_type : 'verifiable-id');
-						resource += '&workflow_version=' + params.workflow_version;
 						resource += '&flow_type=' + (params.flow_type == 'same-device' ? 'same-device' : 'cross-device');
 
 						plain_str = params.client_did;
@@ -137,6 +137,8 @@ class Fetcher {
 						enc_str = (plain_str ? encodeURIComponent(plain_str) : null);
 						resource += (enc_str ? '&credential_offer_endpoint=' + enc_str : '');
 		
+						// primus specific
+						resource += '&workflow_version=' + params.workflow_version;
 				
 						json.initiate_issuance = await rest_connection_initiate_issuance.rest_get(resource);
 		
@@ -146,7 +148,18 @@ class Fetcher {
 
 					case 'initiate_verification': {
 						let rest_connection_initiate_verification = this._createRestConnection(rest_url);
+		
+						rest_connection_initiate_verification.addToHeader({key: 'conformance', value: params.conformance});
+						
+						// cross
+						resource = '/authentication-requests';
+						resource += '?conformance=' + params.conformance;
+						resource += '&flow_type=' + (params.flow_type == 'same-device' ? 'same-device' : 'cross-device');
+						resource += '&scheme=openid';
 				
+						json.initiate_verification = await rest_connection_initiate_verification.rest_get(resource);
+					
+						return (json.initiate_verification ? json.initiate_verification : null);
 					}
 					break;
 		
@@ -371,7 +384,7 @@ class Fetcher {
 				resource += '&nonce=' + params.nonce;
 
 				if (params.vc_offer.grants.authorization_code) {
-					// intime of deferred credential
+					// intime or deferred credential
 					if (params.vc_offer.grants.authorization_code.issuer_state)
 					resource += '&issuer_state=' + params.vc_offer.grants.authorization_code.issuer_state;
 					else
@@ -425,7 +438,7 @@ class Fetcher {
 				// TODO: analyse request_jobj
 
 
-				let rest_connection_code= this._createRestConnection(authorization_code_url);
+				let rest_connection_code = this._createRestConnection(authorization_code_url);
 				
 				resource = '';
 

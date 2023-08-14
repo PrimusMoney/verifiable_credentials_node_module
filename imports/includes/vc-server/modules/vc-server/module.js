@@ -191,7 +191,8 @@ var Module = class {
 						openid_url += 'initiate_issuance?';
 						openid_url += 'issuer=' + encodeURIComponent(vc_config.rest_server_url + vc_config.rest_server_vc_api_path);
 						openid_url += '&credential_type=' + encodeURIComponent(params.credential_type);
-		
+	
+						if (options.flow_connection !== 'off')
 						openid_url += '&conformance=' + (params.conformance ? params.conformance : sessionuuid);
 					}
 					break;
@@ -211,9 +212,11 @@ var Module = class {
 		
 						openid_url += '&nonce=' + (params.nonce ? params.nonce : session.guid());
 						
+						if (options.flow_connection !== 'off')
 						openid_url += '&conformance=' + (params.conformance ? params.conformance : sessionuuid);
 		
-						/* openid_url += '&claims='  */
+						if (params.claims_string)
+						openid_url += '&claims='  + params.claims_string;
 		
 					}
 					break
@@ -233,13 +236,48 @@ var Module = class {
 						credential_offer_uri += (client_token ? '/' + client_token : '');
 						credential_offer_uri += '/issuer/credential/offer';
 
-						credential_offer_uri += (params.nonce ? '/' + params.nonce + '_' + sessionuuid : '');
+						let credentialOfferId = (params.credentialOfferId ? params.credentialOfferId : null);
+
+						if (!credentialOfferId) {
+							if (options.flow_connection !== 'off')
+							credentialOfferId = (params.nonce ? sessionuuid + '_' + params.nonce : null);
+						}
+
+						credential_offer_uri += (credentialOfferId ? '/' + credentialOfferId : '');
+
+						if (options.flow_connection === 'off') {
+							// things that we won't pass to server with the first call of initiation sequence
+							credential_offer_uri += '?credential_type=' + params.credential_type;
+							credential_offer_uri += '&flow_type=' + params.flow_type;
+							credential_offer_uri += (params.client_did ? '&client_id=' + params.client_did : '');
+						}
+
 
 						openid_url += '?credential_offer_uri=' + encodeURIComponent(credential_offer_uri);
+
 					}
 					break;
 		
 					case 'initiate_verification': {
+						openid_url = 'openid-credential-call://';
+		
+						openid_url += '?'; // method (should be something like verify)
+						openid_url += 'scope=openid';
+						openid_url += '&response_type=id_token';
+				
+						openid_url += '&client_id=' + encodeURIComponent(params.client_id);
+						
+						let redirect_uri = vc_config.rest_server_url + vc_config.rest_server_api_path + '/verifiablecredentials';
+						redirect_uri += (params.ebsi_conformance_v2 ? '/verifier-mock/authentication-responses' : '/verifier/present');
+						openid_url += '&redirect_uri=' + encodeURIComponent(redirect_uri);
+		
+						openid_url += '&nonce=' + (params.nonce ? params.nonce : session.guid());
+						
+						if (options.flow_connection !== 'off')
+						openid_url += '&conformance=' + (params.conformance ? params.conformance : sessionuuid);
+		
+						if (params.claims_string)
+						openid_url += '&claims='  + params.claims_string;
 					}
 					break
 				}
@@ -247,7 +285,6 @@ var Module = class {
 			break;
 
 		}
-
 
 		return openid_url;
 	}

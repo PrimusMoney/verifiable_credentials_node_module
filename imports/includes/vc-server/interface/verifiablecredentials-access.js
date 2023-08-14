@@ -8,6 +8,23 @@ var VerifiableCredentialsServerAccess = class {
 		this.rest_connection = null;
 	}
 	
+	_createRestConnection(rest_url) {
+		const URL = require("url");
+
+		var session = this.session;
+		var global = session.getGlobalObject();
+
+		let parsedUrl = URL.parse(rest_url, true);
+
+		const rest_server_url = parsedUrl.protocol + '//' + parsedUrl.host;
+		const rest_server_api_path = parsedUrl.path;
+
+		const AsyncRestConnection = global.getModuleClass('crypto-did', 'AsyncRestConnection');
+		let rest_connection = new AsyncRestConnection(this.session, rest_server_url, rest_server_api_path);
+		
+		return rest_connection;				
+	}
+
 
 	// rest connection
 	_checkRestConnectionHeader() {
@@ -187,6 +204,33 @@ var VerifiableCredentialsServerAccess = class {
 
 	//
 	// vc api
+
+	// openif_configuration
+	async openid_credential_issuer() {
+		var resource = "/.well-known/openid-credential-issuer";
+
+		let res = await this.rest_get(resource);
+
+		if (!res)
+			throw('rest error calling ' + resource );
+		else
+			return res;
+	}
+
+	async openid_configuration() {
+		let openid_credential_issuer = await this.openid_credential_issuer();
+
+		const openid_config_url = openid_credential_issuer.authorization_server;
+		let rest_connection_openid_credential_issuer = this._createRestConnection(openid_config_url);
+
+		let resource = '/.well-known/openid-configuration';
+		let res = await rest_connection_openid_credential_issuer.rest_get(resource);
+
+		if (!res)
+			throw('rest error calling ' + resource );
+		else
+			return res;
+	}
 
 	// credentials
 	async credential_fetch(options) {
