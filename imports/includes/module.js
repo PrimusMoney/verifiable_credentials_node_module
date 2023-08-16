@@ -631,7 +631,12 @@ var Module = class {
 	async fetchVerifiableCredential(session, keyuuid, options) {
 		var global = this.global;
 		const Did = global.getModuleClass('crypto-did', 'Did');
-		const did = await Did.buildObjectFromKeyUUID(session, keyuuid, options.alg, options.method, options.type);
+
+		let _alg = options.alg;
+		let _method = (options.did_method ? options.did_method : options.method);
+		let _type = options.type;
+
+		const did = await Did.buildObjectFromKeyUUID(session, keyuuid, _alg, _method, _type);
 
 		options.did_obj = did;
 

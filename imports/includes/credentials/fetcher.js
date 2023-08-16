@@ -156,6 +156,9 @@ class Fetcher {
 						resource += '?conformance=' + params.conformance;
 						resource += '&flow_type=' + (params.flow_type == 'same-device' ? 'same-device' : 'cross-device');
 						resource += '&scheme=openid';
+		
+						// primus specific
+						resource += '&workflow_version=' + params.workflow_version;
 				
 						json.initiate_verification = await rest_connection_initiate_verification.rest_get(resource);
 					
@@ -282,14 +285,15 @@ class Fetcher {
 
 				header.typ = 'jwt';
 
-				let keySet = await this._getKeySet();
+				let keySet = await did_obj._getKeySet();
 				let jwkPubKey = keySet.jwkKeyPair.publicKey;
 
 				header.alg = did_obj._getJwkKeyAlg(jwkPubKey);
 				header.jwk = {crv: jwkPubKey.crv, kty: jwkPubKey.kty, x: jwkPubKey.x, y: jwkPubKey.y};
 
-				const agent = await did_obj.getNaturalPersonAgent(alg, (options.did_method ? options.did_method : 'ebsi'));
-				const kid = agent.kid;
+				//const agent = await did_obj.getNaturalPersonAgent(alg, (options.did_method ? options.did_method : 'ebsi'));
+				//const kid = agent.kid;
+				const kid = await did_obj.getKid();
 
 				header.kid = kid;
 
@@ -298,7 +302,7 @@ class Fetcher {
 				body.iss = header.kid;
 				body.aud = params.issuer;
 				body.nonce = json.token.c_nonce;
-				body.iat = this._getTimeStamp();
+				body.iat = did_obj._getTimeStamp();
 
 				//let jwt = await this._createJWT(header, body, header.alg);
 				let jwt = await this._createDidJWT(header, body, did_obj, alg, (options.did_method ? options.did_method : 'ebsi'))
