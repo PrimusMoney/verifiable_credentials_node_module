@@ -27,6 +27,49 @@ class Fetcher {
 	}
 
 	// calling 3rd party
+
+	async _discoverEndpoints(params) {
+		const rest_url = params.rest_url;
+
+		let openid_credential_issuer_url = rest_url + '/.well-known/openid-credential-issuer';
+		let rest_connection_openid_credential_issuer = this._createRestConnection(openid_credential_issuer_url);
+		let openid_credential_issuer = await rest_connection_openid_credential_issuer.rest_get('');
+
+		let openid_config_url = openid_credential_issuer.authorization_server + '/.well-known/openid-configuration';
+		let rest_connection_openid_config = this._createRestConnection(openid_config_url);
+		let openid_configuration = await rest_connection_openid_config.rest_get('');
+
+		let xtra_configuration = (openid_configuration && openid_configuration.xtra_configuration ? openid_configuration.xtra_configuration : {});
+
+		if (xtra_configuration.multi_tenancy && (xtra_configuration.multi_tenancy.activate === true)) {
+			// server implements multi-tenancy, must get the endpoints for the specific client
+			let client_token = (params.client_id ? (params.client_key ? params.client_id + '_' + params.client_key : params.client_id) : null)
+			
+			if (client_token) {
+				// we check if we must use a specific openid_credential_issuer &&  openid_configuration
+				const client_openid_credential_issuer_url = rest_url + '/' + client_token + '/.well-known/openid-credential-issuer';
+				let client_rest_connection_openid_credential_issuer = this._createRestConnection(client_openid_credential_issuer_url);
+				let client_openid_credential_issuer = await client_rest_connection_openid_credential_issuer.rest_get('').catch(err => {});
+
+				if (client_openid_credential_issuer) {
+					const client_openid_config_url = client_openid_credential_issuer.authorization_server + '/.well-known/openid-configuration';
+					let client_rest_connection_openid_config = this._createRestConnection(client_openid_config_url);
+					let client_openid_configuration = await client_rest_connection_openid_config.rest_get('').catch(err => {});
+
+					if (client_openid_credential_issuer && client_openid_configuration) {
+						openid_credential_issuer_url = client_openid_credential_issuer_url;
+						openid_credential_issuer = client_openid_credential_issuer;
+
+						openid_config_url = client_openid_config_url;
+						openid_configuration = client_openid_configuration;
+					}
+				}
+			}
+		}
+
+		return {openid_credential_issuer_url, openid_credential_issuer, openid_config_url, openid_configuration};
+	}
+
 	async fetchInitiationUrl(options) {
 		let rest_url = options.rest_url;
 
@@ -84,7 +127,8 @@ class Fetcher {
 			case 'v3': {
 				//
 				// discovery
-				const openid_credential_issuer_url = rest_url + '/.well-known/openid-credential-issuer';
+				const {openid_credential_issuer_url, openid_credential_issuer, openid_config_url, openid_configuration} = await this._discoverEndpoints(params);
+				/* const openid_credential_issuer_url = rest_url + '/.well-known/openid-credential-issuer';
 				let rest_connection_openid_credential_issuer = this._createRestConnection(openid_credential_issuer_url);
 				let openid_credential_issuer = await rest_connection_openid_credential_issuer.rest_get('');
 
@@ -92,11 +136,11 @@ class Fetcher {
 				let rest_connection_openid_config = this._createRestConnection(openid_config_url);
 				let openid_configuration = await rest_connection_openid_config.rest_get('');
 	
-				let xtra_configuration = (openid_configuration && openid_configuration.xtra_configuration ? openid_configuration.xtra_configuration : {});
+				let xtra_configuration = (openid_configuration && openid_configuration.xtra_configuration ? openid_configuration.xtra_configuration : {}); */
 
 				switch (options.method) {
 					case 'initiate_issuance': {
-						if (xtra_configuration.multi_tenancy && (xtra_configuration.multi_tenancy.activate === true)) {
+						/* if (xtra_configuration.multi_tenancy && (xtra_configuration.multi_tenancy.activate === true)) {
 							// server implements multi-tenancy, must get the endpoints for the specific client
 							let client_token = (params.client_id ? (params.client_key ? params.client_id + '_' + params.client_key :params.client_id) : null)
 							
@@ -117,7 +161,7 @@ class Fetcher {
 									}
 								}
 							}
-						}
+						} */
 
 						let issuer_url = openid_credential_issuer.credential_issuer;
 
@@ -139,6 +183,7 @@ class Fetcher {
 		
 						// primus specific
 						resource += '&workflow_version=' + params.workflow_version;
+						resource += '&nonce=' + params.nonce;
 				
 						json.initiate_issuance = await rest_connection_initiate_issuance.rest_get(resource);
 		
@@ -159,6 +204,7 @@ class Fetcher {
 		
 						// primus specific
 						resource += '&workflow_version=' + params.workflow_version;
+						resource += '&nonce=' + params.nonce;
 				
 						json.initiate_verification = await rest_connection_initiate_verification.rest_get(resource);
 					
@@ -188,7 +234,7 @@ class Fetcher {
 		const alg = (options.alg ? options.alg : 'ES256');
 		let did_obj = options.did_obj;
 
-		let rest_url = options.rest_url;
+		const rest_url = options.rest_url;
 
 		let json = {};
 
@@ -338,14 +384,12 @@ class Fetcher {
 				pre_authorization.preauthorized_code = params.preauthorized_code;
 
 				//
-				// discovery
-				const openid_credential_issuer_url = rest_url + '/.well-known/openid-credential-issuer';
-				let rest_connection_openid_credential_issuer = this._createRestConnection(openid_credential_issuer_url);
-				let openid_credential_issuer = await rest_connection_openid_credential_issuer.rest_get('');
+				// vc offering
+				const vc_offer = params.vc_offer; 
 
-				const openid_config_url = openid_credential_issuer.authorization_server + '/.well-known/openid-configuration';
-				let rest_connection_openid_config = this._createRestConnection(openid_config_url);
-				let openid_configuration = await rest_connection_openid_config.rest_get('');
+				//
+				// discovery
+				const {openid_credential_issuer_url, openid_credential_issuer, openid_config_url, openid_configuration} = await this._discoverEndpoints(params);
 	
 				//
 				// authorize
@@ -357,7 +401,7 @@ class Fetcher {
 				resource += '&state='+ sessionuuid;
 
 				//plain_str = 'https://oauth2.primusmoney.com/erc20-dapp/api/oauth2';
-				plain_str = 'openid:';
+				plain_str = 'openid-credential-offer://';
 				enc_str = encodeURIComponent(plain_str);
 				resource += '&redirect_uri=' + enc_str;
 
@@ -367,7 +411,7 @@ class Fetcher {
 				resource += '&client_id=' + enc_str;
 
 				let authorization_details = [{type:"openid_credential",format:"jwt_vc"}];
-				authorization_details[0].types = params.vc_offer.credentials[0].types;
+				authorization_details[0].types = vc_offer.credentials[0].types;
 				authorization_details[0].locations = [openid_credential_issuer.credential_issuer];
 
 				plain_str = JSON.stringify(authorization_details);
@@ -387,16 +431,16 @@ class Fetcher {
 				if (params.nonce)
 				resource += '&nonce=' + params.nonce;
 
-				if (params.vc_offer.grants.authorization_code) {
+				if (vc_offer.grants.authorization_code) {
 					// intime or deferred credential
-					if (params.vc_offer.grants.authorization_code.issuer_state)
-					resource += '&issuer_state=' + params.vc_offer.grants.authorization_code.issuer_state;
+					if (vc_offer.grants.authorization_code.issuer_state)
+					resource += '&issuer_state=' + vc_offer.grants.authorization_code.issuer_state;
 					else
 					return Promise.reject('issuer_state is missing');
 				}
-				else if (params.vc_offer.grants['urn:ietf:params:oauth:grant-type:pre-authorized_code']) {
+				else if (vc_offer.grants['urn:ietf:params:oauth:grant-type:pre-authorized_code']) {
 					// requires authorization
-					let authorization_type = params.vc_offer.grants['urn:ietf:params:oauth:grant-type:pre-authorized_code'];
+					let authorization_type = vc_offer.grants['urn:ietf:params:oauth:grant-type:pre-authorized_code'];
 					bNeedsUserPin = true;
 					pre_authorization.user_pin = '6239'; // should be entered via params.user_pin
 					pre_authorization.preauthorized_code = authorization_type['pre-authorized_code'];
@@ -542,7 +586,7 @@ class Fetcher {
 
 				postdata = {};
 				postdata.format = 'jwt_vc';
-				postdata.types = params.vc_offer.credentials[0].types;
+				postdata.types = vc_offer.credentials[0].types;
 				//postdata.access_token = json.token.access_token;
 				postdata.c_nonce = json.token.c_nonce;
 				postdata.c_nonce_expires_in = json.token.expires_in;
