@@ -128,47 +128,17 @@ class Fetcher {
 				//
 				// discovery
 				const {openid_credential_issuer_url, openid_credential_issuer, openid_config_url, openid_configuration} = await this._discoverEndpoints(params);
-				/* const openid_credential_issuer_url = rest_url + '/.well-known/openid-credential-issuer';
-				let rest_connection_openid_credential_issuer = this._createRestConnection(openid_credential_issuer_url);
-				let openid_credential_issuer = await rest_connection_openid_credential_issuer.rest_get('');
-
-				const openid_config_url = openid_credential_issuer.authorization_server + '/.well-known/openid-configuration';
-				let rest_connection_openid_config = this._createRestConnection(openid_config_url);
-				let openid_configuration = await rest_connection_openid_config.rest_get('');
-	
-				let xtra_configuration = (openid_configuration && openid_configuration.xtra_configuration ? openid_configuration.xtra_configuration : {}); */
 
 				switch (options.method) {
 					case 'initiate_issuance': {
-						/* if (xtra_configuration.multi_tenancy && (xtra_configuration.multi_tenancy.activate === true)) {
-							// server implements multi-tenancy, must get the endpoints for the specific client
-							let client_token = (params.client_id ? (params.client_key ? params.client_id + '_' + params.client_key :params.client_id) : null)
-							
-							if (client_token) {
-								// we check if we must use a specific openid_credential_issuer &&  openid_configuration
-								const client_openid_credential_issuer_url = rest_url + '/' + client_token + '/.well-known/openid-credential-issuer';
-								let client_rest_connection_openid_credential_issuer = this._createRestConnection(client_openid_credential_issuer_url);
-								let client_openid_credential_issuer = await client_rest_connection_openid_credential_issuer.rest_get('').catch(err => {});
-				
-								if (client_openid_credential_issuer) {
-									const client_openid_config_url = client_openid_credential_issuer.authorization_server + '/.well-known/openid-configuration';
-									let client_rest_connection_openid_config = this._createRestConnection(client_openid_config_url);
-									let client_openid_configuration = await client_rest_connection_openid_config.rest_get('').catch(err => {});
-	
-									if (client_openid_credential_issuer && client_openid_configuration) {
-										openid_credential_issuer = client_openid_credential_issuer;
-										openid_configuration = client_openid_configuration;
-									}
-								}
-							}
-						} */
 
 						let issuer_url = openid_credential_issuer.credential_issuer;
 
 						let rest_connection_initiate_issuance = this._createRestConnection(issuer_url);
 
 						// cross by default
-						resource = '/initiate-credential-offer';
+						resource = '/initiate-credential-offer'; // EBSI v3
+						//resource = '/issuer/initiate'; // primus
 
 						resource += '?credential_type=' + (params.credential_type ? params.credential_type : 'verifiable-id');
 						resource += '&flow_type=' + (params.flow_type == 'same-device' ? 'same-device' : 'cross-device');
@@ -197,7 +167,7 @@ class Fetcher {
 						rest_connection_initiate_verification.addToHeader({key: 'conformance', value: params.conformance});
 						
 						// cross
-						resource = '/authentication-requests';
+						resource = '/verifier/initiate'; // primus
 						resource += '?conformance=' + params.conformance;
 						resource += '&flow_type=' + (params.flow_type == 'same-device' ? 'same-device' : 'cross-device');
 						resource += '&scheme=openid';
@@ -205,6 +175,7 @@ class Fetcher {
 						// primus specific
 						resource += '&workflow_version=' + params.workflow_version;
 						resource += '&nonce=' + params.nonce;
+						resource += '&credentialCallId=' + params.credentialCallId;
 				
 						json.initiate_verification = await rest_connection_initiate_verification.rest_get(resource);
 					
@@ -478,6 +449,7 @@ class Fetcher {
 				let state = json.authorize.state;
 				let nonce = json.authorize.nonce;
 
+				// retrieve request context
 				const code_request_url = json.authorize.request_uri;
 				let rest_connection_code_request = this._createRestConnection(code_request_url);
 				let request_jwt = await rest_connection_code_request.rest_get('');
@@ -486,6 +458,7 @@ class Fetcher {
 				// TODO: analyse request_jobj
 
 
+				// request access code
 				let rest_connection_code = this._createRestConnection(authorization_code_url);
 				
 				resource = '';
@@ -685,26 +658,70 @@ class Fetcher {
 		let resource;
 		let postdata;
 
-		// cross
-		let rest_connection_verify_cross = this._createRestConnection(rest_url);
 
-		rest_connection_verify_cross.addToHeader({key: 'conformance', value: params.conformance});
-		
-		// '/authentication_responses'
-		resource = '';
-		resource += '?conformance=' + params.conformance;
-		resource += '&flow_type=cross-device';
-		resource += '&scheme=openid';
+		switch(params.workflow_version) {
+			case 'v2': {
+				// cross
+				let rest_connection_verify_cross = this._createRestConnection(rest_url);
 
-		rest_connection_verify_cross.content_type = 'application/x-www-form-urlencoded';
+				rest_connection_verify_cross.addToHeader({key: 'conformance', value: params.conformance});
+				
+				// '/authentication_responses'
+				resource = '';
+				resource += '?conformance=' + params.conformance;
+				resource += '&flow_type=cross-device';
+				resource += '&scheme=openid';
 
-		postdata = {};
+				rest_connection_verify_cross.content_type = 'application/x-www-form-urlencoded';
 
-		postdata = 'id_token=' + idtoken;
-		postdata += '&vp_token=' + vptoken;
+				postdata = {};
+
+				postdata = 'id_token=' + idtoken;
+				postdata += '&vp_token=' + vptoken;
 
 
-		json.verify_cross_device = await rest_connection_verify_cross.rest_post(resource, postdata);
+				json.verify_cross_device = await rest_connection_verify_cross.rest_post(resource, postdata);
+			}
+			break;
+
+			case 'v3': {
+				// cross
+				let rest_connection_verify_cross = this._createRestConnection(rest_url);
+
+			
+				// '/authentication_responses'
+				resource = '';
+				resource += '?flow_type=cross-device';
+				resource += '&scheme=openid-credential-call';
+
+				rest_connection_verify_cross.content_type = 'application/x-www-form-urlencoded';
+
+				postdata = {};
+
+				postdata = 'id_token=' + idtoken;
+				postdata += '&vp_token=' + vptoken;
+
+				// specific
+				let _options = {};
+
+				_options.nonce = params.nonce;
+				_options.workflow_version = params.workflow_version;
+				_options.credentialCallId = params.credentialCallId;
+
+				postdata += '&options=' + JSON.stringify(_options);
+
+
+				json.verify_cross_device = await rest_connection_verify_cross.rest_post(resource, postdata);
+			}
+			break;
+
+			default:
+				return Promise.reject('no workflow version');
+
+		}
+
+
+
 
 
 		return json.verify_cross_device;

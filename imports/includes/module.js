@@ -620,7 +620,7 @@ var Module = class {
 		var global = this.global;
 
 		if (!options.conformance)
-		options.conformance = session.getSessionUUID();
+		options.conformance = session.getSessionUUID(); // OBSOLETE
 
 		const Fetcher = global.getModuleClass('crypto-did', 'Fetcher');
 		const fetcher = Fetcher.getObject(session)

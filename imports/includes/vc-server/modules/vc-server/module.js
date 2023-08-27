@@ -273,11 +273,14 @@ var Module = class {
 		
 						openid_url += '&nonce=' + (params.nonce ? params.nonce : session.guid());
 						
-						if (options.flow_connection !== 'off')
-						openid_url += '&conformance=' + (params.conformance ? params.conformance : sessionuuid);
+						/* if (options.flow_connection !== 'off')
+						openid_url += '&conformance=' + (params.conformance ? params.conformance : sessionuuid); */
 		
 						if (params.claims_string)
 						openid_url += '&claims='  + params.claims_string;
+
+						// specific
+						openid_url += '&credentialCallId='  + params.credentialCallId;
 					}
 					break
 				}
@@ -294,31 +297,6 @@ var Module = class {
 		var cryptodidmodule = global.getModuleObject('crypto-did');
 
 		let openid_url = await cryptodidmodule.fetchInitiationUrl(session, options);
-
-		// TEST
-		var cryptodidmodule = global.getModuleObject('crypto-did');
-
-		// issuance
-		var _options;
-
-/* 		_options = {method: 'initiate_issuance'};
-		_options.conformance = 'f1db0ef0-6dfa-4af9-84a6-d27f7bb22683';
-		_options.flow_type = 'cross-device';
-		_options.rest_url = 'https://api-conformance.ebsi.eu/conformance/v2';
-
-		openid_url = await cryptodidmodule.fetchInitiationUrl(session, _options); */
-
-		// verification
-/* 		_options = {method: 'initiate_verification'};
-		_options.conformance = 'f1db0ef0-6dfa-4af9-84a6-d27f7bb22683';
-		_options.credential_type = 'verifiable-id';
-		_options.flow_type = 'cross-device';
-		let redirect_uri = 'https://api-conformance.ebsi.eu/conformance/v2/verifier-mock/authentication-responses';
-		_options.rest_url = redirect_uri.substring(0, redirect_uri.lastIndexOf('/'));
-
-		openid_url = await cryptodidmodule.fetchInitiationUrl(session, _options); */
-
-		// TEST
 
 		return openid_url;
 	}
