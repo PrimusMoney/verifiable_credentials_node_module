@@ -251,36 +251,49 @@ var Module = class {
 							credential_offer_uri += '&flow_type=' + params.flow_type;
 							credential_offer_uri += (params.client_did ? '&client_id=' + params.client_did : '');
 						}
-
-
-						openid_url += '?credential_offer_uri=' + encodeURIComponent(credential_offer_uri);
+						else {
+							openid_url += '?credential_offer_uri=' + encodeURIComponent(credential_offer_uri);
+						}
 
 					}
 					break;
 		
 					case 'initiate_verification': {
 						openid_url = 'openid-credential-call://';
-		
-						openid_url += '?'; // method (should be something like verify)
-						openid_url += 'scope=openid';
-						openid_url += '&response_type=id_token';
-				
-						openid_url += '&client_id=' + encodeURIComponent(params.client_id);
-						
-						let redirect_uri = vc_config.rest_server_url + vc_config.rest_server_api_path + '/verifiablecredentials';
-						redirect_uri += (params.ebsi_conformance_v2 ? '/verifier-mock/authentication-responses' : '/verifier/present');
-						openid_url += '&redirect_uri=' + encodeURIComponent(redirect_uri);
-		
-						openid_url += '&nonce=' + (params.nonce ? params.nonce : session.guid());
-						
-						/* if (options.flow_connection !== 'off')
-						openid_url += '&conformance=' + (params.conformance ? params.conformance : sessionuuid); */
-		
-						if (params.claims_string)
-						openid_url += '&claims='  + params.claims_string;
 
-						// specific
-						openid_url += '&credentialCallId='  + params.credentialCallId;
+						if (options.flow_connection === 'off') {
+							// things that we won't pass to server with the first call of initiation sequence
+
+		
+							openid_url += '?'; // method (should be something like verify)
+							openid_url += 'scope=openid';
+							openid_url += '&response_type=id_token';
+					
+							openid_url += '&client_id=' + encodeURIComponent(params.client_id);
+							
+							let redirect_uri = vc_config.rest_server_url + vc_config.rest_server_api_path + '/verifiablecredentials';
+							redirect_uri += (params.ebsi_conformance_v2 ? '/verifier-mock/authentication-responses' : '/verifier/present');
+							openid_url += '&redirect_uri=' + encodeURIComponent(redirect_uri);
+			
+							openid_url += '&nonce=' + (params.nonce ? params.nonce : session.guid());
+							
+							/* if (options.flow_connection !== 'off')
+							openid_url += '&conformance=' + (params.conformance ? params.conformance : sessionuuid); */
+			
+							if (params.claims_string)
+							openid_url += '&claims='  + params.claims_string;
+						}
+						else {
+							// specific to primus
+							let credential_call_uri = vc_config.rest_server_url + vc_config.rest_server_vc_api_path;
+
+							credential_call_uri += '/verifier/credential/call';
+
+							credential_call_uri += ( params.credentialCallId ? '/' + params.credentialCallId : '');
+
+							openid_url += '?credential_call_uri=' + encodeURIComponent(credential_call_uri)
+						}
+
 					}
 					break
 				}

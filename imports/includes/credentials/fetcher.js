@@ -28,6 +28,14 @@ class Fetcher {
 
 	// calling 3rd party
 
+	async _fetchVerifiableCredentialOffer(credential_offer_uri) {
+		const rest_connection = this._createRestConnection(credential_offer_uri);
+
+		let offer = await rest_connection.rest_get('');
+
+		return offer;
+	}
+
 	async _discoverEndpoints(params) {
 		const rest_url = params.rest_url;
 
@@ -356,7 +364,13 @@ class Fetcher {
 
 				//
 				// vc offering
-				const vc_offer = params.vc_offer; 
+				let vc_offer = params.vc_offer;
+
+				if (!vc_offer) {
+					// if params.vc_offer == null we fetch the credential offer now
+					let _credential_offer_uri = params.openid_uri;
+					vc_offer = await this._fetchVerifiableCredentialOffer(_credential_offer_uri);
+				}
 
 				//
 				// discovery
@@ -640,11 +654,19 @@ class Fetcher {
 
 		}
 
-		//
-
-
 		return (json.credential && json.credential.credential ? json.credential.credential : null);
 	}
+
+
+	async _fetchVerifiableCredentialCall(credential_call_uri) {
+		const rest_connection = this._createRestConnection(credential_call_uri);
+
+		let call = await rest_connection.rest_get('');
+
+		return call;
+	}
+
+
 
 	async fetchVerifiabledPresentationVerification(audience, idtoken, vptoken, options) {
 		var params = options;
@@ -685,8 +707,18 @@ class Fetcher {
 			break;
 
 			case 'v3': {
+
+				// credential call details
+				let vc_call = params.vc_call;
+
+				if (! vc_call && params.credential_call_url) {
+					// we fetch the credential call details now
+					let credential_call_uri = params.credential_call_url;
+					vc_call = await this._fetchVerifiableCredentialCall(credential_call_uri)
+				}
+
 				// cross
-				let rest_connection_verify_cross = this._createRestConnection(rest_url);
+				let rest_connection_verify_cross = this._createRestConnection(vc_call.credential_presentation_endpoint);
 
 			
 				// '/authentication_responses'
@@ -706,7 +738,7 @@ class Fetcher {
 
 				_options.nonce = params.nonce;
 				_options.workflow_version = params.workflow_version;
-				_options.credentialCallId = params.credentialCallId;
+				_options.credentialCallId = vc_call.credentialCallId;
 
 				postdata += '&options=' + JSON.stringify(_options);
 
