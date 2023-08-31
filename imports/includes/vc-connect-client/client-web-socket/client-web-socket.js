@@ -1,6 +1,6 @@
 var ClientWebSocket = class {
 	
-	constructor(socket_server, sessionuuid, connectionuuid, socket_connection) {
+	constructor(sessionuuid, connectionuuid, socket_server, socket_connection) {
 
 		this.socket_server = socket_server;
 
@@ -25,7 +25,7 @@ var ClientWebSocket = class {
 		this.socket_connection = null;
 
 		let json = {sessionuuid: this.sessionuuid, connectuuid: this.connectionuuid};
-		this.server_socket._dispatchActionEvent('onConnectionClosed', json);
+		this.socket_server._dispatchActionEvent('onConnectionClosed', json);
 	}
 	
 	_onError(event) {

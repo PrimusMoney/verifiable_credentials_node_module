@@ -243,7 +243,6 @@ var Module = class {
 							credentialOfferId = (params.nonce ? sessionuuid + '_' + params.nonce : null);
 						}
 
-						credential_offer_uri += (credentialOfferId ? '/' + credentialOfferId : '');
 
 						if (options.flow_connection === 'off') {
 							// things that we won't pass to server with the first call of initiation sequence
@@ -252,48 +251,48 @@ var Module = class {
 							credential_offer_uri += (params.client_did ? '&client_id=' + params.client_did : '');
 						}
 						else {
-							openid_url += '?credential_offer_uri=' + encodeURIComponent(credential_offer_uri);
+							credential_offer_uri += (credentialOfferId ? '/' + credentialOfferId : '');
 						}
 
+						openid_url += '?credential_offer_uri=' + encodeURIComponent(credential_offer_uri);
 					}
 					break;
 		
 					case 'initiate_verification': {
 						openid_url = 'openid-credential-call://';
 
+						// specific to primus
+
+						let credential_call_uri = vc_config.rest_server_url + vc_config.rest_server_vc_api_path;
+
+						credential_call_uri += '/verifier/credential/call';
+
 						if (options.flow_connection === 'off') {
 							// things that we won't pass to server with the first call of initiation sequence
-
-		
-							openid_url += '?'; // method (should be something like verify)
-							openid_url += 'scope=openid';
-							openid_url += '&response_type=id_token';
+	
+							credential_call_uri += '?scope=openid';
+							credential_call_uri += '&response_type=id_token';
 					
-							openid_url += '&client_id=' + encodeURIComponent(params.client_id);
+							credential_call_uri += '&client_id=' + encodeURIComponent(params.client_id);
+							credential_call_uri += '&client_key=' + encodeURIComponent(params.client_key);
 							
 							let redirect_uri = vc_config.rest_server_url + vc_config.rest_server_api_path + '/verifiablecredentials';
 							redirect_uri += (params.ebsi_conformance_v2 ? '/verifier-mock/authentication-responses' : '/verifier/present');
-							openid_url += '&redirect_uri=' + encodeURIComponent(redirect_uri);
+							credential_call_uri += '&redirect_uri=' + encodeURIComponent(redirect_uri);
 			
-							openid_url += '&nonce=' + (params.nonce ? params.nonce : session.guid());
+							credential_call_uri += '&nonce=' + (params.nonce ? params.nonce : session.guid());
 							
-							/* if (options.flow_connection !== 'off')
-							openid_url += '&conformance=' + (params.conformance ? params.conformance : sessionuuid); */
+							/* credential_call_uri += '&conformance=' + (params.conformance ? params.conformance : sessionuuid); */
 			
 							if (params.claims_string)
-							openid_url += '&claims='  + params.claims_string;
+							credential_call_uri += '&claims='  + params.claims_string;
 						}
 						else {
-							// specific to primus
-							let credential_call_uri = vc_config.rest_server_url + vc_config.rest_server_vc_api_path;
-
-							credential_call_uri += '/verifier/credential/call';
-
 							credential_call_uri += ( params.credentialCallId ? '/' + params.credentialCallId : '');
 
-							openid_url += '?credential_call_uri=' + encodeURIComponent(credential_call_uri)
 						}
 
+						openid_url += '?credential_call_uri=' + encodeURIComponent(credential_call_uri)
 					}
 					break
 				}
