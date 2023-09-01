@@ -28,10 +28,25 @@ class Fetcher {
 
 	// calling 3rd party
 
-	async _fetchVerifiableCredentialOffer(credential_offer_uri) {
-		const rest_connection = this._createRestConnection(credential_offer_uri);
+	async fetchVerifiableCredentialOffer(credential_offer_uri) {
+		const URL = require("url");
 
-		let offer = await rest_connection.rest_get('');
+		// parse uri in case we have query parameters
+		let parsedUrl = URL.parse(credential_offer_uri, true);
+
+		let rest_url = parsedUrl.protocol + '//' + parsedUrl.host + '/' + parsedUrl.pathname;
+
+		const rest_connection = this._createRestConnection(rest_url);
+
+		let resource = '';
+
+		let param_keys = Object.keys(parsedUrl.query);
+		for (var i = 0; i < (param_keys.length ? param_keys.length : 0); i++) {
+			resource += (i == 0 ? '?' : '&');
+			resource += param_keys[i] + '=' + parsedUrl.query[param_keys[i]];
+		}
+
+		let offer = await rest_connection.rest_get(resource);
 
 		return offer;
 	}
@@ -149,7 +164,7 @@ class Fetcher {
 						//resource = '/issuer/initiate'; // primus
 
 						resource += '?credential_type=' + (params.credential_type ? params.credential_type : 'verifiable-id');
-						resource += '&flow_type=' + (params.flow_type == 'same-device' ? 'same-device' : 'cross-device');
+						resource += '&flow_type=' + (params.flow_type ? params.flow_type : 'cross-device');
 
 						plain_str = params.client_did;
 						enc_str = (plain_str ? encodeURIComponent(plain_str) : null);
@@ -177,7 +192,7 @@ class Fetcher {
 						// cross
 						resource = '/verifier/initiate'; // primus
 						resource += '?conformance=' + params.conformance;
-						resource += '&flow_type=' + (params.flow_type == 'same-device' ? 'same-device' : 'cross-device');
+						resource += '&flow_type=' + (params.flow_type ? params.flow_type : 'cross-device');
 						resource += '&scheme=openid';
 		
 						// primus specific
@@ -369,7 +384,7 @@ class Fetcher {
 				if (!vc_offer) {
 					// if params.vc_offer == null we fetch the credential offer now
 					let _credential_offer_uri = params.openid_uri;
-					vc_offer = await this._fetchVerifiableCredentialOffer(_credential_offer_uri);
+					vc_offer = await this.fetchVerifiableCredentialOffer(_credential_offer_uri);
 				}
 
 				//
@@ -658,10 +673,25 @@ class Fetcher {
 	}
 
 
-	async _fetchVerifiableCredentialCall(credential_call_uri) {
-		const rest_connection = this._createRestConnection(credential_call_uri);
+	async fetchVerifiableCredentialCall(credential_call_uri) {
+		const URL = require("url");
 
-		let call = await rest_connection.rest_get('');
+		// parse uri in case we have query parameters
+		let parsedUrl = URL.parse(credential_call_uri, true);
+
+		let rest_url = parsedUrl.protocol + '//' + parsedUrl.host + '/' + parsedUrl.pathname;
+
+		const rest_connection = this._createRestConnection(rest_url);
+
+		let resource = '';
+
+		let param_keys = Object.keys(parsedUrl.query);
+		for (var i = 0; i < (param_keys.length ? param_keys.length : 0); i++) {
+			resource += (i == 0 ? '?' : '&');
+			resource += param_keys[i] + '=' + parsedUrl.query[param_keys[i]];
+		}
+
+		let call = await rest_connection.rest_get(resource);
 
 		return call;
 	}
@@ -714,7 +744,7 @@ class Fetcher {
 				if (! vc_call && params.credential_call_url) {
 					// we fetch the credential call details now
 					let credential_call_uri = params.credential_call_url;
-					vc_call = await this._fetchVerifiableCredentialCall(credential_call_uri)
+					vc_call = await this.fetchVerifiableCredentialCall(credential_call_uri)
 				}
 
 				// cross
@@ -723,7 +753,7 @@ class Fetcher {
 			
 				// '/authentication_responses'
 				resource = '';
-				resource += '?flow_type=cross-device';
+				resource += '?flow_type=' + (params.flow_type ? params.flow_type : 'cross-device');
 				resource += '&scheme=openid-credential-call';
 
 				rest_connection_verify_cross.content_type = 'application/x-www-form-urlencoded';

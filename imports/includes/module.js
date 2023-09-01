@@ -623,9 +623,31 @@ var Module = class {
 		options.conformance = session.getSessionUUID(); // OBSOLETE
 
 		const Fetcher = global.getModuleClass('crypto-did', 'Fetcher');
-		const fetcher = Fetcher.getObject(session)
+		const fetcher = Fetcher.getObject(session);
 
 		return fetcher.fetchInitiationUrl(options);
+	}
+
+	async fetchVerifiableCredentialOffer(session, options) {
+		var global = this.global;
+
+		const Fetcher = global.getModuleClass('crypto-did', 'Fetcher');
+		const fetcher = Fetcher.getObject(session);
+
+		let credential_offer_uri = options.credential_offer_uri;
+
+		return fetcher.fetchVerifiableCredentialOffer(credential_offer_uri);
+	}
+
+	async fetchVerifiableCredentialCall(session, options) {
+		var global = this.global;
+
+		const Fetcher = global.getModuleClass('crypto-did', 'Fetcher');
+		const fetcher = Fetcher.getObject(session);
+
+		let credential_call_uri = options.credential_call_uri;
+
+		return fetcher.fetchVerifiableCredentialCall(credential_call_uri);
 	}
 
 	async fetchVerifiableCredential(session, keyuuid, options) {
@@ -641,7 +663,7 @@ var Module = class {
 		options.did_obj = did;
 
 		const Fetcher = global.getModuleClass('crypto-did', 'Fetcher');
-		const fetcher = Fetcher.getObject(session)
+		const fetcher = Fetcher.getObject(session);
 
 		return fetcher.fetchVerifiableCredential(options);
 	}
@@ -650,7 +672,7 @@ var Module = class {
 		var global = this.global;
 
 		const Fetcher = global.getModuleClass('crypto-did', 'Fetcher');
-		const fetcher = Fetcher.getObject(session)
+		const fetcher = Fetcher.getObject(session);
 
 		return fetcher.fetchVerifiabledPresentationVerification(audience, idtoken, vptoken, options);
 	}
@@ -668,7 +690,7 @@ var Module = class {
 		var global = this.global;
 
 		const Fetcher = global.getModuleClass('crypto-did', 'Fetcher');
-		const fetcher = Fetcher.getObject(session)
+		const fetcher = Fetcher.getObject(session);
 
 		return fetcher.verifyVerifiablePresentationJWT(audience, idtoken, vptoken, options);
 	}

@@ -229,7 +229,7 @@ var Module = class {
 
 				switch(params.method) {
 					case 'initiate_issuance': {
-						openid_url = 'openid-credential-offer://';
+						openid_url = (params.credential_offer_endpoint ? params.credential_offer_endpoint : 'openid-credential-offer://');
 
 						let credential_offer_uri = vc_config.rest_server_url + vc_config.rest_server_vc_api_path;
 
@@ -259,7 +259,7 @@ var Module = class {
 					break;
 		
 					case 'initiate_verification': {
-						openid_url = 'openid-credential-call://';
+						openid_url = (params.credential_call_endpoint ? params.credential_call_endpoint : 'openid-credential-call://');
 
 						// specific to primus
 
@@ -282,7 +282,10 @@ var Module = class {
 			
 							credential_call_uri += '&nonce=' + (params.nonce ? params.nonce : session.guid());
 							
-							/* credential_call_uri += '&conformance=' + (params.conformance ? params.conformance : sessionuuid); */
+							//credential_call_uri += '&conformance=' + (params.conformance ? params.conformance : sessionuuid);
+
+							if (params.flow_type)
+							credential_call_uri += '&flow_type='  + params.flow_type;
 			
 							if (params.claims_string)
 							credential_call_uri += '&claims='  + params.claims_string;
