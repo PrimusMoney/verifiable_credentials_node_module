@@ -34,7 +34,10 @@ class Fetcher {
 		// parse uri in case we have query parameters
 		let parsedUrl = URL.parse(credential_offer_uri, true);
 
-		let rest_url = parsedUrl.protocol + '//' + parsedUrl.host + '/' + parsedUrl.pathname;
+		let root_url = parsedUrl.protocol + '//' + parsedUrl.host;
+		let pathname = parsedUrl.pathname;
+
+		let rest_url =  root_url + (pathname && !pathname.startsWith('/') ? '/' : '') + pathname;
 
 		const rest_connection = this._createRestConnection(rest_url);
 
@@ -191,13 +194,15 @@ class Fetcher {
 						
 						// cross
 						resource = '/verifier/initiate'; // primus
-						resource += '?conformance=' + params.conformance;
+						resource += '?conformance=' + params.conformance; // to be coherent with v2, but should be called state
 						resource += '&flow_type=' + (params.flow_type ? params.flow_type : 'cross-device');
 						resource += '&scheme=openid';
 		
 						// primus specific
 						resource += '&workflow_version=' + params.workflow_version;
 						resource += '&nonce=' + params.nonce;
+
+						if (params.credentialCallId)
 						resource += '&credentialCallId=' + params.credentialCallId;
 				
 						json.initiate_verification = await rest_connection_initiate_verification.rest_get(resource);
@@ -679,7 +684,11 @@ class Fetcher {
 		// parse uri in case we have query parameters
 		let parsedUrl = URL.parse(credential_call_uri, true);
 
-		let rest_url = parsedUrl.protocol + '//' + parsedUrl.host + '/' + parsedUrl.pathname;
+		let root_url = parsedUrl.protocol + '//' + parsedUrl.host;
+		let pathname = parsedUrl.pathname;
+
+		let rest_url =  root_url + (pathname && !pathname.startsWith('/') ? '/' : '') + pathname;
+
 
 		const rest_connection = this._createRestConnection(rest_url);
 

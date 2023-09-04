@@ -171,6 +171,20 @@ var Module = class {
 	//
 	// API
 	//
+	_getBufferClass() {
+		var _Buffer;
+		try {
+			if (typeof window !== 'undefined' && typeof window.Buffer !== 'undefined') {
+				_Buffer = window.Buffer;
+			} else {
+				_Buffer = require('buffer').Buffer;
+			}
+		} catch (e) {
+		}
+		
+		return _Buffer;
+	}
+
 	async getInitiationUrl(session, options) {
 		var global = this.global;
 		const Utils = global.getModuleClass('crypto-did', 'Utils');
@@ -246,9 +260,14 @@ var Module = class {
 
 						if (options.flow_connection === 'off') {
 							// things that we won't pass to server with the first call of initiation sequence
-							credential_offer_uri += '?credential_type=' + params.credential_type;
-							credential_offer_uri += '&flow_type=' + params.flow_type;
-							credential_offer_uri += (params.client_did ? '&client_id=' + params.client_did : '');
+							let query_string = '';
+							query_string += '?credential_type=' + params.credential_type;
+							query_string += '&flow_type=' + params.flow_type;
+							query_string += (params.client_did ? '&client_id=' + params.client_did : '');
+
+							// transform in a b64 pseudo credentialOfferId
+							var _Buffer = this._getBufferClass();
+							credential_offer_uri += '/' + 'b64_' + _Buffer.from(query_string).toString('base64');
 						}
 						else {
 							credential_offer_uri += (credentialOfferId ? '/' + credentialOfferId : '');
@@ -265,30 +284,36 @@ var Module = class {
 
 						let credential_call_uri = vc_config.rest_server_url + vc_config.rest_server_vc_api_path;
 
+						credential_call_uri += (client_token ? '/' + client_token : '');
 						credential_call_uri += '/verifier/credential/call';
 
 						if (options.flow_connection === 'off') {
 							// things that we won't pass to server with the first call of initiation sequence
+							let query_string = '';
 	
-							credential_call_uri += '?scope=openid';
-							credential_call_uri += '&response_type=id_token';
+							query_string += '?scope=openid';
+							query_string += '&response_type=id_token';
 					
-							credential_call_uri += '&client_id=' + encodeURIComponent(params.client_id);
-							credential_call_uri += '&client_key=' + encodeURIComponent(params.client_key);
+							query_string += '&client_id=' + encodeURIComponent(params.client_id);
+							query_string += '&client_key=' + encodeURIComponent(params.client_key);
 							
 							let redirect_uri = vc_config.rest_server_url + vc_config.rest_server_api_path + '/verifiablecredentials';
 							redirect_uri += (params.ebsi_conformance_v2 ? '/verifier-mock/authentication-responses' : '/verifier/present');
-							credential_call_uri += '&redirect_uri=' + encodeURIComponent(redirect_uri);
+							query_string += '&redirect_uri=' + encodeURIComponent(redirect_uri);
 			
-							credential_call_uri += '&nonce=' + (params.nonce ? params.nonce : session.guid());
+							query_string += '&nonce=' + (params.nonce ? params.nonce : session.guid());
 							
 							//credential_call_uri += '&conformance=' + (params.conformance ? params.conformance : sessionuuid);
 
 							if (params.flow_type)
-							credential_call_uri += '&flow_type='  + params.flow_type;
+							query_string += '&flow_type='  + params.flow_type;
 			
 							if (params.claims_string)
-							credential_call_uri += '&claims='  + params.claims_string;
+							query_string += '&claims='  + params.claims_string;
+
+							// transform in a b64 pseudo credentialCallId
+							var _Buffer = this._getBufferClass();
+							credential_call_uri += '/' + 'b64_' + _Buffer.from(query_string).toString('base64');
 						}
 						else {
 							credential_call_uri += ( params.credentialCallId ? '/' + params.credentialCallId : '');
