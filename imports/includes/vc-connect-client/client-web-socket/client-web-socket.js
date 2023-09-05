@@ -58,6 +58,11 @@ var ClientWebSocket = class {
 	async postData(data) {
 		return this.postPacket({}, data);
 	}
+
+	// static
+	static getObject(sessionuuid, connectionuuid, socket_server, socket_connection) {
+		return new ClientWebSocket(sessionuuid, connectionuuid, socket_server, socket_connection);
+	}
 }
 
 

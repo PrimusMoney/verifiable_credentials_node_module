@@ -106,7 +106,7 @@ var WebSocketServer = class {
 				socket_connection.onopen = onopen_callback;
 			else
 				socket_connection.onopen = () => {
-					let client_socket = new ClientWebSocket(this, sessionuuid, connectionuuid, socket_connection);
+					let client_socket = ClientWebSocket.getObject(sessionuuid, connectionuuid, this, socket_connection);
 
 					resolve(client_socket);
 				};

@@ -156,14 +156,14 @@ var VerifiableCredentialsServerSocket = class {
 		let vc_connect_client_socket = await websocket_server.createClientWebSocket(sessionuuid, connectionuuid, null, this._onMessage.bind(this));
 						// re-route messages to our method (and we chain messages in it)
 
-		this.client_websocket = new ClientWebSocket(sessionuuid, connectionuuid, this, vc_connect_client_socket);
+		this.client_websocket = ClientWebSocket.getObject(sessionuuid, connectionuuid, this, vc_connect_client_socket);
 
 
 		/* this.client_websocket = await new Promise((resolve, reject) => {
 			let socket_connection = new WebSocket(server_url + '?sessionuuid=' + sessionuuid + '&cnxuuid=' + connectionuuid);
 
 			socket_connection.onopen = () => {
-				let client_socket = new ClientWebSocket(sessionuuid, connectionuuid, this, socket_connection);
+				let client_socket = ClientWebSocket.getObject((sessionuuid, connectionuuid, this, socket_connection);
 
 				resolve(client_socket);
 			};
