@@ -205,7 +205,7 @@ var VerifiableCredentialsServerAccess = class {
 	//
 	// vc api
 
-	// openif_configuration
+	// openid_configuration
 	async openid_credential_issuer() {
 		var resource = "/.well-known/openid-credential-issuer";
 
@@ -232,25 +232,7 @@ var VerifiableCredentialsServerAccess = class {
 			return res;
 	}
 
-	// credentials
-	async credential_fetch(options) {
-		// POST
-		var resource = "/credential/fetch";
-
-		var postdata = {options};
-
-		var res = await this.rest_post(resource, postdata);
-
-		if (!res)
-			throw('rest error calling ' + resource );
-		else {
-			if (res['error'])
-				throw('rest error calling ' + resource + (res['error'] ? ': ' + res['error'] : ''));
-			else
-				return res['credential'];
-		}
-	}
-
+	// support because of limitations on browser
 	async credential_restcall(resturl, method, resource, data) {
 		// POST
 		var _resource = "/credential/restcall";
@@ -286,15 +268,42 @@ var VerifiableCredentialsServerAccess = class {
 				return res['code_challenge'];
 		}
 	}
+	// END support because of limitations on browser
 
 
 
+	//
 	// issuer
-	async issuer_datasource_add(client_id, client_key, name, endpoint, credential_type, nonce) {
+
+	// pre-initiation (used by widget)
+	async issuer_credential_prerequest(client_id, client_key, credential_type, nonce, issuer_did, client_did) {
+		// GET
+		var resource = '/issuer/credential/prerequest';
+
+		resource += '?client_id=' + client_id;
+		resource += '&client_key=' + client_key;
+		resource += '&credential_type=' + credential_type;
+		resource += '&nonce=' + nonce;
+		resource += '&issuer_did=' + issuer_did;
+		resource += '&client_did=' + client_did;
+
+		let res = await this.rest_get(resource);
+
+		if (!res)
+			throw('rest error calling ' + resource );
+		else {
+			if (res['error'])
+				throw('rest error calling ' + resource + (res['error'] ? ': ' + res['error'] : ''));
+			else
+				return res;
+		}
+	}
+
+	async issuer_datasource_add(client_id, client_key, name, endpoint, credential_type, nonce, issuer_did, client_did) {
 		// POST
 		var resource = "/issuer/datasource/add";
 
-		var postdata = {client_id, client_key, name, endpoint, credential_type, nonce};
+		var postdata = {client_id, client_key, name, endpoint, credential_type, nonce, issuer_did, client_did};
 
 		var res = await this.rest_post(resource, postdata);
 
@@ -308,7 +317,54 @@ var VerifiableCredentialsServerAccess = class {
 		}
 	}
 
+	// post initiation (used by wallet)
+
+	// credentials
+	async credential_fetch(options) {
+		// POST
+		var resource = "/credential/fetch";
+
+		var postdata = {options};
+
+		var res = await this.rest_post(resource, postdata);
+
+		if (!res)
+			throw('rest error calling ' + resource );
+		else {
+			if (res['error'])
+				throw('rest error calling ' + resource + (res['error'] ? ': ' + res['error'] : ''));
+			else
+				return res['credential'];
+		}
+	}
+
+	
+
+	//
 	// verifier
+
+	// pre-initiation (used by widget)
+	async verifier_credential_prerequest(client_id, client_key, credential_type, nonce) {
+		// GET
+		let resource = '/verifier/credential/prerequest';
+
+		resource += '?client_id=' + client_id;
+		resource += '&client_key=' + client_key;
+		resource += '&credential_type=' + credential_type;
+		resource += '&nonce=' + nonce;
+
+		let res = await this.rest_get(resource);
+
+		if (!res)
+			throw('rest error calling ' + resource );
+		else {
+			if (res['error'])
+				throw('rest error calling ' + resource + (res['error'] ? ': ' + res['error'] : ''));
+			else
+				return res;
+		}
+	}
+
 	async verifier_datasink_add(client_id, client_key, name, endpoint, credential_type, nonce) {
 		// POST
 		var resource = "/verifier/datasink/add";
@@ -327,6 +383,7 @@ var VerifiableCredentialsServerAccess = class {
 		}
 	}
 
+	// post initiation (used by wallet)
 	async verifier_verify(audience, idtoken, vptoken, options) {
 		// POST
 		var resource = "/verifier/verify";

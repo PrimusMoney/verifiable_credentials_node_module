@@ -777,7 +777,8 @@ class Fetcher {
 
 				_options.nonce = params.nonce;
 				_options.workflow_version = params.workflow_version;
-				_options.credentialCallId = vc_call.credentialCallId;
+				_options.credentialCallId = vc_call.credentialCallId; // not necessary if verifier_state passed
+				_options.verifier_state = vc_call.verifier_state;
 
 				postdata += '&options=' + JSON.stringify(_options);
 
