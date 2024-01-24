@@ -145,7 +145,7 @@ class AsyncRestConnection {
 						resolve(query);
 	
 					}
-					else{
+					else {
 						// Otherwise no redirect; capture the response as normal            
 						let data = '';
 				
@@ -198,9 +198,38 @@ class AsyncRestConnection {
 					resolve(query);
 					
 				} else {
-					res.on('data', (d) => {
-						resolve(d);
-					});
+					if (this._isInBrowser() == true) {
+						// when we face a site with CORS restriction and
+						// because we can not catch a 302 before 
+						// "TypeError: Failed to fetch at ClientRequest._onFinish"
+						// error, we redirect to the /.well-known/openid-configuration endpoint
+						// to avoid a 404 and parse the query that we sent
+						let requestUrl = res.url;
+						const URL = require("url");
+						let parsedUrl = URL.parse(requestUrl, true);
+						let {query} = parsedUrl;
+	
+						resolve(query);
+	
+					}
+					else {
+						// Otherwise no redirect; capture the response as normal            
+						let data = '';
+				
+						res.on('data', function (chunk) {
+							data += chunk;
+						}).on('end', function () {
+							if (typeof data === 'string' || data instanceof String) {
+								try {
+									let json = JSON.parse(data);
+									resolve(json);
+									return;
+								}
+								catch(e) {}
+							}
+							resolve(data);
+						});
+					}
 				}
 			});
 				

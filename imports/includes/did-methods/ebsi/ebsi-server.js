@@ -543,8 +543,8 @@ class EBSIServer {
 
 		if (pageafter || pagesize) resource += '?';
 
-		resource += (pageafter ? 'page[after]=' + pageafter : '');
-		resource += (pagesize ? '&page[size]=' + pagesize : '');
+		resource += (typeof pageafter !== 'undefined' ? 'page[after]=' + pageafter : '');
+		resource += (typeof pagesize !== 'undefined' ? '&page[size]=' + pagesize : '');
 
 		var res = await this.rest_get(resource);
 
@@ -572,8 +572,8 @@ class EBSIServer {
 
 		if (pageafter || pagesize) resource += '?';
 
-		resource += (pageafter ? 'page[after]=' + pageafter : '');
-		resource += (pagesize ? '&page[size]=' + pagesize : '');
+		resource += (typeof pageafter !== 'undefined' ? 'page[after]=' + pageafter : '');
+		resource += (typeof pagesize !== 'undefined' ? '&page[size]=' + pagesize : '');
 
 		var res = await this.rest_get(resource);
 
@@ -597,8 +597,8 @@ class EBSIServer {
 
 		if (pageafter || pagesize) resource += '?';
 
-		resource += (pageafter ? 'page[after]=' + pageafter : '');
-		resource += (pagesize ? '&page[size]=' + pagesize : '');
+		resource += (typeof pageafter !== 'undefined' ? 'page[after]=' + pageafter : '');
+		resource += (typeof pagesize !== 'undefined' ? '&page[size]=' + pagesize : '');
 
 		var res = await this.rest_get(resource);
 
@@ -640,8 +640,8 @@ class EBSIServer {
 
 		if (pageafter || pagesize) resource += '?';
 
-		resource += (pageafter ? 'page[after]=' + pageafter : '');
-		resource += (pagesize ? '&page[size]=' + pagesize : '');
+		resource += (typeof pageafter !== 'undefined' ? 'page[after]=' + pageafter : '');
+		resource += (typeof pagesize !== 'undefined' ? '&page[size]=' + pagesize : '');
 
 		var res = await this.rest_get(resource);
 
@@ -669,8 +669,8 @@ class EBSIServer {
 
 		if (pageafter || pagesize) resource += '?';
 
-		resource += (pageafter ? 'page[after]=' + pageafter : '');
-		resource += (pagesize ? '&page[size]=' + pagesize : '');
+		resource += (typeof pageafter !== 'undefined' ? 'page[after]=' + pageafter : '');
+		resource += (typeof pagesize !== 'undefined' ? '&page[size]=' + pagesize : '');
 
 		var res = await this.rest_get(resource);
 
@@ -700,8 +700,8 @@ class EBSIServer {
 
 		if (pageafter || pagesize) resource += '?';
 
-		resource += (pageafter ? 'page[after]=' + pageafter : '');
-		resource += (pagesize ? '&page[size]=' + pagesize : '');
+		resource += (typeof pageafter !== 'undefined' ? 'page[after]=' + pageafter : '');
+		resource += (typeof pagesize !== 'undefined' ? '&page[size]=' + pagesize : '');
 
 		var res = await this.rest_get(resource);
 
@@ -727,8 +727,8 @@ class EBSIServer {
 
 		if (pageafter || pagesize) resource += '?';
 
-		resource += (pageafter ? 'page[after]=' + pageafter : '');
-		resource += (pagesize ? '&page[size]=' + pagesize : '');
+		resource += (typeof pageafter !== 'undefined' ? 'page[after]=' + pageafter : '');
+		resource += (typeof pagesize !== 'undefined' ? '&page[size]=' + pagesize : '');
 
 		var res = await this.rest_get(resource);
 
@@ -759,8 +759,8 @@ class EBSIServer {
 
 		if (pageafter || pagesize) resource += '?';
 
-		resource += (pageafter ? 'page[after]=' + pageafter : '');
-		resource += (pagesize ? '&page[size]=' + pagesize : '');
+		resource += (typeof pageafter !== 'undefined' ? 'page[after]=' + pageafter : '');
+		resource += (typeof pagesize !== 'undefined' ? '&page[size]=' + pagesize : '');
 
 		var res = await this.rest_get(resource);
 
@@ -786,8 +786,8 @@ class EBSIServer {
 
 		if (pageafter || pagesize) resource += '?';
 
-		resource += (pageafter ? 'page[after]=' + pageafter : '');
-		resource += (pagesize ? '&page[size]=' + pagesize : '');
+		resource += (typeof pageafter !== 'undefined' ? 'page[after]=' + pageafter : '');
+		resource += (typeof pagesize !== 'undefined' ? '&page[size]=' + pagesize : '');
 
 		var res = await this.rest_get(resource);
 
@@ -835,8 +835,33 @@ class EBSIServer {
 
 
 	// static
-	static getObject(session, type, version) {
-		return new EBSIServer(session, type, version);
+	static getObject(session, ebsi_env, version) {
+		let _ebsi_env_string;
+		let _ebsi_env = {};
+
+		// to support legacy ebsi_env being a string (or null)
+		if (ebsi_env) {
+			if (typeof ebsi_env === 'string' || ebsi_env instanceof String) {
+				_ebsi_env_string = ebsi_env;
+				_ebsi_env = {ebsi_env_string: _ebsi_env_string};
+			}
+			else {
+				_ebsi_env_string = ebsi_env.ebsi_env_string;
+				_ebsi_env = ebsi_env;
+			}
+		}
+
+
+		let ebsi_server = new EBSIServer(session, _ebsi_env_string, version);
+
+		// fill configurations that have been passed in a structure
+		if (_ebsi_env.rest_url)
+		ebsi_server.rest_url = _ebsi_env.rest_url;
+
+		if (_ebsi_env.ebsiAuthority)
+		ebsi_server.ebsiAuthority = _ebsi_env.ebsiAuthority;
+
+		return ebsi_server;
 	}	
 
 }

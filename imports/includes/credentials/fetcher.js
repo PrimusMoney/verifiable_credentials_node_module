@@ -119,7 +119,7 @@ class Fetcher {
 						resource = '/issuer-mock/initiate';
 						resource += '?conformance=' + params.conformance;
 						resource += '&credential_type=' + (params.credential_type ? params.credential_type : 'verifiable-id');
-						resource += '&flow_type=' + (params.flow_type == 'same-device' ? 'same-device' : 'cross-device');
+						resource += '&flow_type=' + (params.flow_type  ? params.flow_type : 'cross-device');
 				
 						json.initiate_issuance = await rest_connection_initiate_issuance.rest_get(resource);
 		
@@ -135,7 +135,7 @@ class Fetcher {
 						// cross
 						resource = '/authentication-requests';
 						resource += '?conformance=' + params.conformance;
-						resource += '&flow_type=' + (params.flow_type == 'same-device' ? 'same-device' : 'cross-device');
+						resource += '&flow_type=' + (params.flow_type ? params.flow_type : 'cross-device');
 						resource += '&scheme=openid';
 				
 						json.initiate_verification = await rest_connection_initiate_verification.rest_get(resource);
@@ -372,6 +372,8 @@ class Fetcher {
 				const Did = global.getModuleClass('crypto-did', 'Did');
 				const JWT = global.getModuleClass('crypto-did', 'JWT');
 
+				const OAUTH2_URL = 'https://oauth2.primusmoney.com/erc20-dapp/api/oauth2';
+
 				let header;
 				let payload;
 
@@ -392,6 +394,14 @@ class Fetcher {
 					vc_offer = await this.fetchVerifiableCredentialOffer(_credential_offer_uri);
 				}
 
+				if (!vc_offer.grants)
+				return Promise.reject('vc offer does not contain grants structure')
+
+				if (!vc_offer.credentials)
+				return Promise.reject('vc offer does not contain credentials structure')
+
+
+
 				//
 				// discovery
 				const {openid_credential_issuer_url, openid_credential_issuer, openid_config_url, openid_configuration} = await this._discoverEndpoints(params);
@@ -405,12 +415,13 @@ class Fetcher {
 				resource += '&response_type=code';
 				resource += '&state='+ sessionuuid;
 
-				//plain_str = 'https://oauth2.primusmoney.com/erc20-dapp/api/oauth2';
-				plain_str = 'openid-credential-offer://';
+				plain_str = OAUTH2_URL;
+				//plain_str = 'openid-credential-offer://';
+				//plain_str = openid_config_url;
 				enc_str = encodeURIComponent(plain_str);
 				resource += '&redirect_uri=' + enc_str;
 
-				//plain_str = 'https://oauth2.primusmoney.com/erc20-dapp/api/oauth2&sessionuuid='+ sessionuuid;
+				//plain_str = OAUTH2_URL + '&sessionuuid='+ sessionuuid;
 				plain_str =  await did_obj.getDid()
 				enc_str = encodeURIComponent(plain_str);
 				resource += '&client_id=' + enc_str;
@@ -418,6 +429,7 @@ class Fetcher {
 				let authorization_details = [{type:"openid_credential",format:"jwt_vc"}];
 				authorization_details[0].types = vc_offer.credentials[0].types;
 				authorization_details[0].locations = [openid_credential_issuer.credential_issuer];
+				//authorization_details[0].locations = [OAUTH2_URL];
 
 				plain_str = JSON.stringify(authorization_details);
 				enc_str = encodeURIComponent(plain_str);
@@ -526,21 +538,13 @@ class Fetcher {
 				//let id_token = await Did.build_id_token(session, keySet, did, params.type, aud, nonce)
 
 				rest_connection_code.content_type = 'application/x-www-form-urlencoded';
-				plain_str = 'https://oauth2.primusmoney.com/erc20-dapp/api/oauth2';
+				plain_str = OAUTH2_URL;
 				enc_str = encodeURIComponent(plain_str);
 
 				postdata = 'id_token=' + id_token;
 				postdata += '&state=' + state;
 				//postdata += '&redirect_uri=' + enc_str;
 
-				if (options.verifiablecredentialsserveraccess) {
-					// TODO: remove when issue with 302 is fixed
-					// Workaround: make call from the server to avoid browser's issue with 302
-					let verifiablecredentialsserveraccess = options.verifiablecredentialsserveraccess;
-
-					json.code = await verifiablecredentialsserveraccess.credential_restcall(authorization_code_url, 'post', resource, postdata);
-				}
-				else
 				json.code = await rest_connection_code.rest_post_302(resource, postdata);
 
 				if (!json.code.code)
@@ -556,7 +560,7 @@ class Fetcher {
 				resource = '';
 
 				rest_connection_token.content_type = 'application/x-www-form-urlencoded';
-				plain_str = 'https://oauth2.primusmoney.com/erc20-dapp/api/oauth2';
+				plain_str = OAUTH2_URL;
 				enc_str = encodeURIComponent(plain_str);
 
 				if (!bNeedsUserPin) {

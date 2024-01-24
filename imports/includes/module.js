@@ -62,11 +62,11 @@ var Module = class {
 		modulescriptloader.push_script( moduleroot + '/did/did.js');
 
 		// ebsi
-		modulescriptloader.push_script( moduleroot + '/ebsi/ebsi-did-document.js');
-		modulescriptloader.push_script( moduleroot + '/ebsi/ebsi-server.js');
-		modulescriptloader.push_script( moduleroot + '/ebsi/ebsi-trusted-issuer.js');
-		modulescriptloader.push_script( moduleroot + '/ebsi/ebsi-trusted-policy.js');
-		modulescriptloader.push_script( moduleroot + '/ebsi/ebsi-trusted-schema.js');
+		modulescriptloader.push_script( moduleroot + '/did-methods/ebsi/ebsi-did-document.js');
+		modulescriptloader.push_script( moduleroot + '/did-methods/ebsi/ebsi-server.js');
+		modulescriptloader.push_script( moduleroot + '/did-methods/ebsi/ebsi-trusted-issuer.js');
+		modulescriptloader.push_script( moduleroot + '/did-methods/ebsi/ebsi-trusted-policy.js');
+		modulescriptloader.push_script( moduleroot + '/did-methods/ebsi/ebsi-trusted-schema.js');
 
 		// jw
 		modulescriptloader.push_script( moduleroot + '/jw/jw-cryptokeys.js');

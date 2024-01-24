@@ -284,8 +284,8 @@ var VerifiableCredentialsServerAccess = class {
 		resource += '&client_key=' + client_key;
 		resource += '&credential_type=' + credential_type;
 		resource += '&nonce=' + nonce;
-		resource += '&issuer_did=' + issuer_did;
-		resource += '&client_did=' + client_did;
+		resource += (issuer_did ? '&issuer_did=' + issuer_did : '');
+		resource += (client_did ? '&client_did=' + client_did : '');
 
 		let res = await this.rest_get(resource);
 
