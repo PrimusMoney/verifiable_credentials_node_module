@@ -216,7 +216,7 @@ var Module = class {
 		
 						openid_url += '?'; // method (should be something like verify)
 						openid_url += 'scope=openid';
-						openid_url += '&response_type=id_token';
+						openid_url += '&response_type=' + (params.response_type ? params.response_type : 'id_token');
 				
 						openid_url += '&client_id=' + encodeURIComponent(params.client_id);
 						
@@ -231,6 +231,18 @@ var Module = class {
 		
 						if (params.claims_string)
 						openid_url += '&claims='  + params.claims_string;
+		
+						if (params.request_uri)
+						openid_url += '&request_uri='  + params.request_uri;
+		
+						if (params.state)
+						openid_url += '&state='  + params.state;
+		
+						if (params.presentation_definition_string)
+						openid_url += '&presentation_definition='  + params.presentation_definition_string;
+		
+						if (params.response_mode)
+						openid_url += '&response_mode='  + params.response_mode;
 		
 					}
 					break
