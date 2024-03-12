@@ -23,15 +23,15 @@ class Verifiable_Credentials {
 	}
 	
 	async init(callback) {
-		console.log('@p2pmoney-org/verifiable_credentials init called');
+		console.log('@primusmoney/verifiable_credentials init called');
 		
 		if (this.initialized) {
-			console.log('module @p2pmoney-org/verifiable_credentials is already initialized.');
+			console.log('module @primusmoney/verifiable_credentials is already initialized.');
 			return true;
 		}
 		
 		if (this.initializing ) {
-			console.log('module @p2pmoney-org/verifiable_credentials is alreay initializing. Wait till it\'s ready.');
+			console.log('module @primusmoney/verifiable_credentials is alreay initializing. Wait till it\'s ready.');
 			return this.initializationpromise;
 		}
 
@@ -77,7 +77,7 @@ class Verifiable_Credentials {
 			
 			this.initializationpromise = new Promise(function (resolve, reject) {
 				self.load.init(function() {
-				console.log('@p2pmoney-org/verifiable_credentials init finished');
+				console.log('@primusmoney/verifiable_credentials init finished');
 				self.initialized = true;
 				
 				if (callback)

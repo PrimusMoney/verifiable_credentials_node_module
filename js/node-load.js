@@ -82,7 +82,7 @@ class NodeLoad {
 			// loading dapps
 			let modulescriptloader = ScriptLoader.findScriptLoader('moduleloader');
 			
-			let verifiablecredentialsscriptloader = modulescriptloader.getChildLoader('@p2pmoney-org/verifiable_credentials');
+			let verifiablecredentialsscriptloader = modulescriptloader.getChildLoader('@primusmoney/verifiable_credentials');
 			
 			// setting script root dir to this node module
 			// instead of ethereum_core/imports
