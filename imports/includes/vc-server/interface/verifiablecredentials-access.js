@@ -313,7 +313,7 @@ var VerifiableCredentialsServerAccess = class {
 		}
 		else {
 			// POST
-			let postdata = {issuer, client, datasource, credentials, nonce};
+			let postdata = {issuer, client, credentials, nonce};
 
 			let res = await this.rest_post(resource, postdata);
 
