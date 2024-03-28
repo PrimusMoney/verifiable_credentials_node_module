@@ -290,7 +290,7 @@ var Module = class {
 					break;
 		
 					case 'initiate_verification': {
-						openid_url = (params.credential_call_endpoint ? params.credential_call_endpoint : 'openid-credential-call://');
+						openid_url = (params.credential_call_endpoint ? params.credential_call_endpoint : 'openid://');
 
 						// specific to primus
 
@@ -332,7 +332,37 @@ var Module = class {
 
 						}
 
-						openid_url += '?credential_call_uri=' + encodeURIComponent(credential_call_uri)
+						switch(params.flow_type) {
+							case 'openidvc': {
+								openid_url = 'openid-vc://';
+
+								openid_url += '?scope=' + (params.scope ? params.scope : 'openid4vp');
+								openid_url += '&client_id=' + params.client_id;
+
+								credential_call_uri += '?workflow_version=v3&flow_type=openidvc';
+								openid_url += '&request_uri=' + encodeURIComponent(credential_call_uri)
+							}
+							break;
+
+							case 'credential-call': {
+								openid_url = 'openid-credential-call://';
+
+								openid_url += '?scope=' + (params.scope ? params.scope : 'openid-credential-call');
+								openid_url += '&client_id=' + params.client_id;
+
+								credential_call_uri += '?workflow_version=v3&flow_type=credential-call';
+								openid_url += '&request_uri=' + encodeURIComponent(credential_call_uri)
+							}
+							break;
+
+							default: {
+								openid_url += '?scope=' + (params.scope ? params.scope : 'openid4vp');
+								openid_url += '&client_id=' + params.client_id;
+
+								openid_url += '&request_uri=' + encodeURIComponent(credential_call_uri)
+							}
+							break;
+						}
 					}
 					break
 				}

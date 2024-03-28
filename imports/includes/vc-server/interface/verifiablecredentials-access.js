@@ -276,34 +276,83 @@ var VerifiableCredentialsServerAccess = class {
 	// issuer
 
 	// pre-initiation (used by widget)
-	async issuer_credential_prerequest(client_id, client_key, credential_type, nonce, issuer_did, client_did) {
-		// GET
+	//async issuer_credential_prerequest(client_id, client_key, credential_type, nonce, issuer_did, client_did) {
+	async issuer_credential_prerequest(issuer, client, credentials, nonce) {
+
 		var resource = '/issuer/credential/prerequest';
 
-		resource += '?client_id=' + client_id;
-		resource += '&client_key=' + client_key;
-		resource += '&credential_type=' + credential_type;
-		resource += '&nonce=' + nonce;
-		resource += (issuer_did ? '&issuer_did=' + issuer_did : '');
-		resource += (client_did ? '&client_did=' + client_did : '');
 
-		let res = await this.rest_get(resource);
+		if (typeof issuer === 'string' || issuer instanceof String) {
+			// legacy call
 
-		if (!res)
-			throw('rest error calling ' + resource );
-		else {
-			if (res['error'])
-				throw('rest error calling ' + resource + (res['error'] ? ': ' + res['error'] : ''));
-			else
-				return res;
+			// GET
+			let client_id = arguments[0];
+			let client_key = arguments[1];
+			let credential_type = arguments[2];
+			let nonce = arguments[3];
+			let issuer_did = arguments[4];
+			let client_did = arguments[5];
+
+			resource += '?client_id=' + client_id;
+			resource += '&client_key=' + client_key;
+			resource += '&credential_type=' + credential_type;
+			resource += '&nonce=' + nonce;
+			resource += (issuer_did ? '&issuer_did=' + issuer_did : '');
+			resource += (client_did ? '&client_did=' + client_did : '');
+
+			let res = await this.rest_get(resource);
+
+			if (!res)
+				throw('rest error calling ' + resource );
+			else {
+				if (res['error'])
+					throw('rest error calling ' + resource + (res['error'] ? ': ' + res['error'] : ''));
+				else
+					return res;
+			}
 		}
+		else {
+			// POST
+			let postdata = (issuer, client, datasource, credentials, nonce);
+
+			let res = await this.rest_post(resource, postdata);
+
+			if (!res)
+				throw('rest error calling ' + resource );
+			else {
+				if (res['error'])
+					throw('rest error calling ' + resource + (res['error'] ? ': ' + res['error'] : ''));
+				else
+					return res;
+			}
+		}
+
+
 	}
 
-	async issuer_datasource_add(client_id, client_key, name, endpoint, credential_type, nonce, issuer_did, client_did) {
+	//async issuer_datasource_add(client_id, client_key, name, endpoint, credential_type, nonce, issuer_did, client_did) {
+	async issuer_datasource_add(issuer, client, datasource, credentials, nonce) {
 		// POST
 		var resource = "/issuer/datasource/add";
 
 		var postdata = {client_id, client_key, name, endpoint, credential_type, nonce, issuer_did, client_did};
+
+		if (typeof issuer === 'string' || issuer instanceof String) {
+			// legacy call
+			let client_id = arguments[0];
+			let client_key = arguments[1];
+			let name = arguments[2];
+			let endpoint = arguments[3];
+			let credential_type = arguments[4];
+			let nonce = arguments[5];
+			let issuer_did = arguments[6];
+			let client_did = arguments[7];
+
+			postdata = {client_id, client_key, name, endpoint, credential_type, nonce, issuer_did, client_did};
+		}
+		else {
+			postdata = (issuer, client, datasource, credentials, nonce);
+		}
 
 		var res = await this.rest_post(resource, postdata);
 
@@ -344,32 +393,72 @@ var VerifiableCredentialsServerAccess = class {
 	// verifier
 
 	// pre-initiation (used by widget)
-	async verifier_credential_prerequest(client_id, client_key, credential_type, nonce) {
-		// GET
+	//async verifier_credential_prerequest(client_id, client_key, credential_type, nonce) {
+	async verifier_credential_prerequest(verifier, client, credentials, nonce) {
 		let resource = '/verifier/credential/prerequest';
 
-		resource += '?client_id=' + client_id;
-		resource += '&client_key=' + client_key;
-		resource += '&credential_type=' + credential_type;
-		resource += '&nonce=' + nonce;
+		if (typeof verifier === 'string' || verifier instanceof String) {
+			// legacy call
+			let client_id = arguments[0];
+			let client_key = arguments[1];
+			let credential_type = arguments[2];
+			let nonce = arguments[3];
 
-		let res = await this.rest_get(resource);
+			// GET
+			resource += '?client_id=' + client_id;
+			resource += '&client_key=' + client_key;
+			resource += '&credential_type=' + credential_type;
+			resource += '&nonce=' + nonce;
 
-		if (!res)
-			throw('rest error calling ' + resource );
+			let res = await this.rest_get(resource);
+
+			if (!res)
+				throw('rest error calling ' + resource );
+			else {
+				if (res['error'])
+					throw('rest error calling ' + resource + (res['error'] ? ': ' + res['error'] : ''));
+				else
+					return res;
+			}
+		}
 		else {
-			if (res['error'])
-				throw('rest error calling ' + resource + (res['error'] ? ': ' + res['error'] : ''));
-			else
-				return res;
+			// POST
+			let postdata = (verifier, client, credentials, nonce);
+
+			let res = await this.rest_post(resource, postdata);
+
+			if (!res)
+				throw('rest error calling ' + resource );
+			else {
+				if (res['error'])
+					throw('rest error calling ' + resource + (res['error'] ? ': ' + res['error'] : ''));
+				else
+					return res;
+			}
 		}
 	}
 
-	async verifier_datasink_add(client_id, client_key, name, endpoint, credential_type, nonce) {
+	//async verifier_datasink_add(client_id, client_key, name, endpoint, credential_type, nonce) {
+	async verifier_datasink_add(verifier, client, datasink, credentials, nonce) {
 		// POST
 		var resource = "/verifier/datasink/add";
 
-		var postdata = {client_id, client_key, name, endpoint, credential_type, nonce};
+		var postdata;
+		
+		if (typeof verifier === 'string' || verifier instanceof String) {
+			// legacy call
+			let client_id = arguments[0];
+			let client_key = arguments[1];
+			let name = arguments[2];
+			let endpoint = arguments[3];
+			let credential_type = arguments[4];
+			let nonce = arguments[5];
+
+			postdata = {client_id, client_key, name, endpoint, credential_type, nonce};
+		}
+		else {
+			postdata = {verifier, client, datasink, credentials, nonce};
+		}
 
 		var res = await this.rest_post(resource, postdata);
 
