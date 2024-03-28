@@ -1,6 +1,6 @@
 {
   "name": "@primusmoney/verifiable_credentials",
-  "version": "0.30.42",
+  "version": "0.30.43",
   "author": "PrimusMoney",
   "homepage": "http://www.primusmoney.com/",
   "license": "UNLICENSED",
@@ -12,7 +12,16 @@
     "test:node": "mocha ./tests/tests.js"
   },
   "dependencies": {
-    "@primusmoney/client_wallet": "^0.30.20"
+    "@digitalbazaar/did-method-key": "^5.1.0",
+    "@digitalbazaar/ecdsa-multikey": "^1.6.0",
+    "@digitalbazaar/ed25519-verification-key-2020": "^4.1.0",
+    "@digitalbazaar/x25519-key-agreement-key-2020": "^3.0.1",
+    "@primusmoney/client_wallet": "^0.30.20",
+    "crypto-js": "^4.1.1",
+    "did-jwt": "6.11.5",
+    "elliptic": "^6.5.4",
+    "jose": "^4.13.1",
+    "key-did-resolver": "3.0.0"
   },
   "devDependencies": {
     "chai": "^4.2.0",

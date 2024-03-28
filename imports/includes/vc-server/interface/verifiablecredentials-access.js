@@ -313,7 +313,7 @@ var VerifiableCredentialsServerAccess = class {
 		}
 		else {
 			// POST
-			let postdata = (issuer, client, datasource, credentials, nonce);
+			let postdata = {issuer, client, datasource, credentials, nonce};
 
 			let res = await this.rest_post(resource, postdata);
 
@@ -351,7 +351,7 @@ var VerifiableCredentialsServerAccess = class {
 			postdata = {client_id, client_key, name, endpoint, credential_type, nonce, issuer_did, client_did};
 		}
 		else {
-			postdata = (issuer, client, datasource, credentials, nonce);
+			postdata = {issuer, client, datasource, credentials, nonce};
 		}
 
 		var res = await this.rest_post(resource, postdata);
@@ -423,7 +423,7 @@ var VerifiableCredentialsServerAccess = class {
 		}
 		else {
 			// POST
-			let postdata = (verifier, client, credentials, nonce);
+			let postdata = {verifier, client, credentials, nonce};
 
 			let res = await this.rest_post(resource, postdata);
 
