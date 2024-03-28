@@ -335,7 +335,7 @@ var VerifiableCredentialsServerAccess = class {
 		// POST
 		var resource = "/issuer/datasource/add";
 
-		var postdata = {client_id, client_key, name, endpoint, credential_type, nonce, issuer_did, client_did};
+		var postdata;
 
 		if (typeof issuer === 'string' || issuer instanceof String) {
 			// legacy call
