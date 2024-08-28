@@ -14,6 +14,7 @@ var Module = class {
 		this.isready = false;
 		this.isloading = false;
 		
+		this.did_method_impl = {};
 	}
 	
 	init() {
@@ -61,12 +62,24 @@ var Module = class {
 		modulescriptloader.push_script( moduleroot + '/did/cryptocard.js');
 		modulescriptloader.push_script( moduleroot + '/did/did.js');
 
-		// ebsi
+		// did methods
+
+		// ebsi method
+		modulescriptloader.push_script( moduleroot + '/did-methods/ebsi/ebsi-submodule.js');
 		modulescriptloader.push_script( moduleroot + '/did-methods/ebsi/ebsi-did-document.js');
 		modulescriptloader.push_script( moduleroot + '/did-methods/ebsi/ebsi-server.js');
 		modulescriptloader.push_script( moduleroot + '/did-methods/ebsi/ebsi-trusted-issuer.js');
 		modulescriptloader.push_script( moduleroot + '/did-methods/ebsi/ebsi-trusted-policy.js');
 		modulescriptloader.push_script( moduleroot + '/did-methods/ebsi/ebsi-trusted-schema.js');
+		
+		// key method
+		modulescriptloader.push_script( moduleroot + '/did-methods/key/key-submodule.js');
+
+		// web method
+		modulescriptloader.push_script( moduleroot + '/did-methods/web/web-submodule.js');
+		modulescriptloader.push_script( moduleroot + '/did-methods/web/web-server.js');
+		modulescriptloader.push_script( moduleroot + '/did-methods/web/web-certificate.js');
+
 
 		// jw
 		modulescriptloader.push_script( moduleroot + '/jw/jw-cryptokeys.js');
@@ -157,6 +170,42 @@ var Module = class {
 		this.clientapicontrollers = mvcclientwalletmodule._getClientAPI();
 
 		return  this.clientapicontrollers;
+	}
+
+	getDidMethodImpl(method) {
+		var global = this.global;
+
+		switch(method) {
+			case 'ebsi': {
+				if (!this.did_method_impl.ebsi) {
+					const EBSIMethodSubModule = global.getModuleClass('crypto-did', 'EBSIMethodSubModule');
+
+					this.did_method_impl.ebsi = new EBSIMethodSubModule(this);
+				}
+
+				return this.did_method_impl.ebsi;
+			}
+
+			case 'key': {
+				if (!this.did_method_impl.key) {
+					const KeyMethodSubModule = global.getModuleClass('crypto-did', 'KeyMethodSubModule');
+
+					this.did_method_impl.key = new KeyMethodSubModule(this);
+				}
+
+				return this.did_method_impl.key;
+			}
+
+			case 'web': {
+				if (!this.did_method_impl.web) {
+					const WebMethodSubModule = global.getModuleClass('crypto-did', 'WebMethodSubModule');
+
+					this.did_method_impl.web = new WebMethodSubModule(this);
+				}
+
+				return this.did_method_impl.web;
+			}
+		}
 	}
 
 	// API

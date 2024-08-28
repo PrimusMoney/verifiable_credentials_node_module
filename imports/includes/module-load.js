@@ -22,12 +22,24 @@ import './cryptokey-block/modules/cryptokey-block/model/cryptokey-block-interfac
 import './did/cryptocard.js';
 import './did/did.js';
 
-// ebsi
+// did methods
+
+// ebsi method
+import './did-methods/ebsi/ebsi-submodule.js';
 import './did-methods/ebsi/ebsi-did-document.js';
 import './did-methods/ebsi/ebsi-server.js';
 import './did-methods/ebsi/ebsi-trusted-issuer.js';
 import './did-methods/ebsi/ebsi-trusted-policy.js';
 import './did-methods/ebsi/ebsi-trusted-schema.js';
+
+// key method
+import './did-methods/key/key-submodule.js';
+
+// web method
+import './did-methods/web/web-submodule.js';
+import './did-methods/web/web-server.js';
+import './did-methods/web/web-certificate.js';
+
 
 // json web
 import './jw/jw-cryptokeys.js';

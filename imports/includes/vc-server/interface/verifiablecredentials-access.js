@@ -275,7 +275,44 @@ var VerifiableCredentialsServerAccess = class {
 	//
 	// issuer
 
+	// pre-authorization (used by data server, requires api_secret)
+	async issuer_credential_preauthorize(client_id, client_key, token, tokentype, api_secret) {
+		// POST
+		var resource = '/issuer/credential/preauthorize';
+
+		var postdata = {client_id, client_key, token, tokentype, api_secret};
+
+		var res = await this.rest_post(resource, postdata);
+
+		if (!res)
+			throw('rest error calling ' + resource );
+		else {
+			if (res['error'])
+				throw('rest error calling ' + resource + (res['error'] ? ': ' + res['error'] : ''));
+			else
+				return res;
+		}	
+	}
+
 	// pre-initiation (used by widget)
+	async issuer_credential_authorization_token_status(client_id, client_key, token, tokentype) {
+		// POST
+		var resource = '/issuer/credential/authorization-token';
+
+		var postdata = {client_id, client_key, token, tokentype};
+
+		var res = await this.rest_post(resource, postdata);
+
+		if (!res)
+			throw('rest error calling ' + resource );
+		else {
+			if (res['error'])
+				throw('rest error calling ' + resource + (res['error'] ? ': ' + res['error'] : ''));
+			else
+				return res;
+		}
+	}
+
 	//async issuer_credential_prerequest(client_id, client_key, credential_type, nonce, issuer_did, client_did) {
 	async issuer_credential_prerequest(issuer, client, credentials, nonce) {
 
@@ -392,7 +429,44 @@ var VerifiableCredentialsServerAccess = class {
 	//
 	// verifier
 
+	// pre-authorization (used by data server, requires api_secret)
+	async verifier_credential_preauthorize(client_id, client_key, token, tokentype, api_secret) {
+		// POST
+		var resource = '/verifier/credential/preauthorize';
+
+		var postdata = {client_id, client_key, token, tokentype, api_secret};
+
+		var res = await this.rest_post(resource, postdata);
+
+		if (!res)
+			throw('rest error calling ' + resource );
+		else {
+			if (res['error'])
+				throw('rest error calling ' + resource + (res['error'] ? ': ' + res['error'] : ''));
+			else
+				return res;
+		}	
+	}
+
 	// pre-initiation (used by widget)
+	async verifier_credential_authorization_token_status(client_id, client_key, token, tokentype) {
+		// POST
+		var resource = '/verifier/credential/authorization-token';
+
+		var postdata = {client_id, client_key, token, tokentype};
+
+		var res = await this.rest_post(resource, postdata);
+
+		if (!res)
+			throw('rest error calling ' + resource );
+		else {
+			if (res['error'])
+				throw('rest error calling ' + resource + (res['error'] ? ': ' + res['error'] : ''));
+			else
+				return res;
+		}
+	}
+
 	//async verifier_credential_prerequest(client_id, client_key, credential_type, nonce) {
 	async verifier_credential_prerequest(verifier, client, credentials, nonce) {
 		let resource = '/verifier/credential/prerequest';

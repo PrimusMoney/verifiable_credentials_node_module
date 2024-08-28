@@ -25,6 +25,9 @@ var ClientWebSocket = class {
 		this.socket_connection = null;
 
 		let json = {sessionuuid: this.sessionuuid, connectuuid: this.connectionuuid};
+
+		json.header = {sessionuuid: this.sessionuuid, connectionuuid: this.connectionuuid}; // needs header for _dispatch
+
 		this.socket_server._dispatchActionEvent('onConnectionClosed', json);
 	}
 	
